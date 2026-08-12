@@ -13,8 +13,11 @@ import { StockMapModule } from './components/StockMapModule';
 import { ArtsoftSyncModule } from './components/ArtsoftSyncModule';
 import { RegrasEngineModule } from './components/RegrasEngineModule';
 import { AuditoriaModule } from './components/AuditoriaModule';
+import { ExpedicaoModule } from './components/ExpedicaoModule';
 import { BarcodeScannerModal } from './components/BarcodeScannerModal';
 import { useWMSData } from './hooks/useWMSData';
+import { PedidoCompra, GuiaTransporte, PaletaExpedicao } from './types/expedicao';
+import { INITIAL_PEDIDOS_COMPRA, INITIAL_PALETAS_EXPEDICAO, INITIAL_GUIAS_TRANSPORTE } from './data/mockExpedicao';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<AppTab>('rececao');
@@ -26,6 +29,11 @@ export default function App() {
   const [rules, setRules] = useState<RuleConfig[]>(INITIAL_RULE_CONFIGS);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(INITIAL_AUDIT_LOGS);
   const [locations] = useState(INITIAL_LOCATIONS);
+
+  // Expedição State
+  const [pedidosCompra, setPedidosCompra] = useState<PedidoCompra[]>(INITIAL_PEDIDOS_COMPRA);
+  const [paletasExpedicao, setPaletasExpedicao] = useState<PaletaExpedicao[]>(INITIAL_PALETAS_EXPEDICAO);
+  const [guiasTransporte, setGuiasTransporte] = useState<GuiaTransporte[]>(INITIAL_GUIAS_TRANSPORTE);
 
   // Scanner & Navigation Helpers
   const [isScannerOpen, setIsScannerOpen] = useState<boolean>(false);
@@ -159,6 +167,33 @@ export default function App() {
     );
   };
 
+  // Handler: Create Transport Guide (Expedição)
+  const handleCreateGuia = (guia: GuiaTransporte) => {
+    setGuiasTransporte(prev => [guia, ...prev]);
+    setPedidosCompra(prev =>
+      prev.map(p => (p.id === guia.pedido_compra_id ? { ...p, status: 'EXPEDIDO' } : p))
+    );
+    const log: AuditLog = {
+      id: `LOG-${Date.now().toString().slice(-4)}`,
+      timestamp: new Date().toISOString().replace('T', ' ').slice(0, 19),
+      operador: 'Op. Expedição',
+      empresa_tenant: selectedTenant,
+      acao: 'GERAR_GUIA_TRANSPORTE',
+      tabela_afetada: 'logistics.guia_transporte',
+      postgrest_rpc: 'fn_gerar_guia_transporte(pedido_id, paletas)',
+      detalhes_json: JSON.stringify({ numero_guia: guia.numero_guia, paletas: guia.paletes_sscc }),
+      ip_terminal: '192.168.1.115 (Terminal Expedição)'
+    };
+    setAuditLogs(prev => [log, ...prev]);
+  };
+
+  // Handler: Update Pedido Status
+  const handleUpdatePedido = (pedido: PedidoCompra) => {
+    setPedidosCompra(prev =>
+      prev.map(p => (p.id === pedido.id ? pedido : p))
+    );
+  };
+
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-800 flex flex-col font-sans">
       
@@ -261,7 +296,17 @@ export default function App() {
           />
         )}
 
-        {/* Tab 4: Sync ARTSOFT */}
+        {/* Tab 4: Expedição */}
+        {activeTab === 'expedicao' && (
+          <ExpedicaoModule
+            pedidos={pedidosCompra}
+            paletas={paletasExpedicao}
+            onCreateGuia={handleCreateGuia}
+            onUpdatePedido={handleUpdatePedido}
+          />
+        )}
+
+        {/* Tab 5: Sync ARTSOFT */}
         {activeTab === 'artsoft_sync' && (
           <ArtsoftSyncModule
             divergences={divergences}

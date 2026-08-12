@@ -1,9 +1,10 @@
-export type AppTab = 
-  | 'rececao' 
-  | 'paletizacao' 
-  | 'stock_mapa' 
-  | 'artsoft_sync' 
-  | 'regras' 
+export type AppTab =
+  | 'rececao'
+  | 'paletizacao'
+  | 'stock_mapa'
+  | 'expedicao'
+  | 'artsoft_sync'
+  | 'regras'
   | 'auditoria';
 
 export interface ReceivingOrder {
