@@ -1,13 +1,10 @@
 import React, { useState } from 'react';
 import { AppTab, ReceivingOrder, PalletSSCC, StockPosition, RuleConfig, AuditLog, ArtsoftStockDivergence } from './types/wms';
-import { 
-  INITIAL_RECEIVING_ORDERS, 
-  INITIAL_PALLETS, 
-  INITIAL_STOCK, 
-  INITIAL_ARTSOFT_DIVERGENCES, 
-  INITIAL_RULE_CONFIGS, 
+import {
+  INITIAL_ARTSOFT_DIVERGENCES,
+  INITIAL_RULE_CONFIGS,
   INITIAL_AUDIT_LOGS,
-  INITIAL_LOCATIONS 
+  INITIAL_LOCATIONS
 } from './data/mockData';
 import { Navbar } from './components/Navbar';
 import { RececaoModule } from './components/RececaoModule';
@@ -17,15 +14,14 @@ import { ArtsoftSyncModule } from './components/ArtsoftSyncModule';
 import { RegrasEngineModule } from './components/RegrasEngineModule';
 import { AuditoriaModule } from './components/AuditoriaModule';
 import { BarcodeScannerModal } from './components/BarcodeScannerModal';
+import { useWMSData } from './hooks/useWMSData';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<AppTab>('rececao');
   const [selectedTenant, setSelectedTenant] = useState<string>('TicSol_HuB (Sonae MC)');
-  
-  // WMS Main State Collections
-  const [orders, setOrders] = useState<ReceivingOrder[]>(INITIAL_RECEIVING_ORDERS);
-  const [pallets, setPallets] = useState<PalletSSCC[]>(INITIAL_PALLETS);
-  const [stockList, setStockList] = useState<StockPosition[]>(INITIAL_STOCK);
+
+  // WMS Main State Collections — Real data from API + fallback to mock
+  const { orders, pallets, stock: stockList, loading: wmsLoading, error: wmsError, setOrders, setPallets, setStock: setStockList } = useWMSData();
   const [divergences, setDivergences] = useState<ArtsoftStockDivergence[]>(INITIAL_ARTSOFT_DIVERGENCES);
   const [rules, setRules] = useState<RuleConfig[]>(INITIAL_RULE_CONFIGS);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(INITIAL_AUDIT_LOGS);
@@ -186,32 +182,39 @@ export default function App() {
         onOpenScanner={() => setIsScannerOpen(true)}
       />
 
+      {/* Status Alert */}
+      {wmsError && (
+        <div className="bg-amber-50 border border-amber-300 text-amber-800 px-4 py-3 rounded-lg flex items-center gap-2">
+          <span className="text-sm">⚠️ {wmsError}</span>
+        </div>
+      )}
+
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        
+
         {/* KPI Dashboard Stat Cards Row (Sleek Interface Theme) */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
             <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Stock em Armazém</div>
             <div className="flex items-baseline justify-between mt-2">
-              <span className="text-2xl font-bold text-slate-900">14,282</span>
-              <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">+2.4% hoje</span>
+              <span className="text-2xl font-bold text-slate-900">{stockList.length.toLocaleString('pt-PT')}</span>
+              <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">Real-time</span>
             </div>
           </div>
 
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
             <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Receções Pendentes</div>
             <div className="flex items-baseline justify-between mt-2">
-              <span className="text-2xl font-bold text-slate-900">18</span>
-              <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">4 Urgentes (Sonae)</span>
+              <span className="text-2xl font-bold text-slate-900">{orders.length}</span>
+              <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">{orders.filter(o => o.status === 'PENDENTE').length} Pendentes</span>
             </div>
           </div>
 
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
             <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Paletes SSCC Criadas</div>
             <div className="flex items-baseline justify-between mt-2">
-              <span className="text-2xl font-bold text-slate-900">{pallets.length + 138}</span>
-              <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">Turno A</span>
+              <span className="text-2xl font-bold text-slate-900">{pallets.length}</span>
+              <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">{wmsLoading ? 'Sincronizando...' : 'Atualizado'}</span>
             </div>
           </div>
 
