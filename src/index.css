@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --primary: #0f172a;
+    --accent: #3b82f6;
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  }
+  
+  body {
+    background-color: var(--bg);
+    color: var(--text-main);
+  }
+
+  code, kbd, samp, pre, .font-mono {
+    font-family: 'IBM Plex Mono', 'Consolas', monospace;
+  }
+}
+
+/* Custom scrollbars for high-density warehouse grid tables */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Print CSS for GS1-128 Logistic Labels & Receiving Slips */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .gs1-label-print {
+    width: 105mm;
+    height: 148mm;
+    padding: 4mm;
+    margin: 0 auto;
+    page-break-after: always;
+    border: 2px solid black;
+    font-family: 'IBM Plex Sans', sans-serif;
+  }
+}
+
+@keyframes laser-scan {
+  0%, 100% { top: 0%; opacity: 0.8; }
+  50% { top: 100%; opacity: 0.3; }
+}
+
+.animate-laser {
+  animation: laser-scan 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+
