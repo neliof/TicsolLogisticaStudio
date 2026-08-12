@@ -16,8 +16,8 @@ import { AuditoriaModule } from './components/AuditoriaModule';
 import { ExpedicaoModule } from './components/ExpedicaoModule';
 import { BarcodeScannerModal } from './components/BarcodeScannerModal';
 import { useWMSData } from './hooks/useWMSData';
+import { useExpedicaoData } from './hooks/useExpedicaoData';
 import { PedidoCompra, GuiaTransporte, PaletaExpedicao } from './types/expedicao';
-import { INITIAL_PEDIDOS_COMPRA, INITIAL_PALETAS_EXPEDICAO, INITIAL_GUIAS_TRANSPORTE } from './data/mockExpedicao';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<AppTab>('rececao');
@@ -30,10 +30,8 @@ export default function App() {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(INITIAL_AUDIT_LOGS);
   const [locations] = useState(INITIAL_LOCATIONS);
 
-  // Expedição State
-  const [pedidosCompra, setPedidosCompra] = useState<PedidoCompra[]>(INITIAL_PEDIDOS_COMPRA);
-  const [paletasExpedicao, setPaletasExpedicao] = useState<PaletaExpedicao[]>(INITIAL_PALETAS_EXPEDICAO);
-  const [guiasTransporte, setGuiasTransporte] = useState<GuiaTransporte[]>(INITIAL_GUIAS_TRANSPORTE);
+  // Expedição State — Real data from API + fallback mock
+  const { pedidos: pedidosCompra, paletas: paletasExpedicao, guias: guiasTransporte, loading: expedicaoLoading, error: expedicaoError, setPedidos: setPedidosCompra, setPaletas: setPaletasExpedicao, setGuias: setGuiasTransporte } = useExpedicaoData();
 
   // Scanner & Navigation Helpers
   const [isScannerOpen, setIsScannerOpen] = useState<boolean>(false);
