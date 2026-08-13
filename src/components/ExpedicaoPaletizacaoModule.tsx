@@ -3,6 +3,7 @@ import { GuiaTransporte, PaletaExpedicao, LinhaGuia } from '../types/expedicao';
 import { PalletSSCC, RuleConfig } from '../types/wms';
 import { generateSSCC, buildGS1128String, formatToGS1Date } from '../utils/gs1';
 import { GS1LabelPrintModal } from './GS1LabelPrintModal';
+import { BarcodeRenderer } from './BarcodeRenderer';
 import {
   Boxes,
   Layers,
@@ -279,9 +280,26 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
                         <div><span className="font-bold text-gray-600">PESO</span><br/><span className="font-mono">{pallet.peso_bruto_kg} KG</span></div>
                       </div>
                     </div>
-                    <div className="text-center text-[8px] font-bold text-gray-600 mb-1">SSCC GS1-128</div>
+
+                    {/* GS1-128 Barcode */}
+                    <div className="border-b-2 border-black pb-2 mb-2 text-center">
+                      <p className="text-[8px] font-bold text-gray-600 mb-1">GS1-128</p>
+                      <div className="flex justify-center">
+                        <div style={{ transform: 'scale(0.6)', transformOrigin: 'top center', marginBottom: '-20px' }}>
+                          <BarcodeRenderer value={pallet.gs1_128_barcode_string} height={30} />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* SSCC Barcode */}
                     <div className="border-t-2 border-black pt-2 text-center">
-                      <p className="font-mono font-bold text-sm">{pallet.sscc}</p>
+                      <p className="text-[8px] font-bold text-gray-600 mb-1">SSCC GS1-18</p>
+                      <div className="flex justify-center">
+                        <div style={{ transform: 'scale(0.7)', transformOrigin: 'top center', marginBottom: '-10px' }}>
+                          <BarcodeRenderer value={pallet.sscc} height={40} />
+                        </div>
+                      </div>
+                      <p className="font-mono font-bold text-xs mt-1">{pallet.sscc}</p>
                     </div>
                   </div>
                 ))}
