@@ -63,7 +63,8 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
       return;
     }
 
-    const sscc = generateSSCC();
+    const ssccObj = generateSSCC();
+    const sscc = ssccObj.ssccFull;
     const palete: PaletaExpedicao = {
       id: `pal-${Date.now()}`,
       sscc,
