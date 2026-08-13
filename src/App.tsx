@@ -14,6 +14,7 @@ import { ArtsoftSyncModule } from './components/ArtsoftSyncModule';
 import { RegrasEngineModule } from './components/RegrasEngineModule';
 import { AuditoriaModule } from './components/AuditoriaModule';
 import { ExpedicaoModule } from './components/ExpedicaoModule';
+import { ExpedicaoPaletizacaoModule } from './components/ExpedicaoPaletizacaoModule';
 import { BarcodeScannerModal } from './components/BarcodeScannerModal';
 import { useWMSData } from './hooks/useWMSData';
 import { useExpedicaoData } from './hooks/useExpedicaoData';
@@ -184,6 +185,26 @@ export default function App() {
     setAuditLogs(prev => [log, ...prev]);
   };
 
+  // Handler: Create Palete Expedição (from PaletizacaoModule)
+  const handleCreatePaletaExpedicao = (palete: PaletaExpedicao) => {
+    setPaletasExpedicao(prev => [palete, ...prev]);
+    setGuiasEntrada(prev =>
+      prev.map(g => (g.id === palete.guia_id ? { ...g, status: 'PALETIZADA' } : g))
+    );
+    const log: AuditLog = {
+      id: `LOG-${Date.now().toString().slice(-4)}`,
+      timestamp: new Date().toISOString().replace('T', ' ').slice(0, 19),
+      operador: 'Op. Paletização',
+      empresa_tenant: selectedTenant,
+      acao: 'CRIAR_PALETE_EXPEDICAO_AUTO',
+      tabela_afetada: 'logistics.palete_expedicao',
+      postgrest_rpc: 'fn_criar_palete_expedicao(guia_id, linhas, temperatura)',
+      detalhes_json: JSON.stringify({ sscc: palete.sscc, guia_id: palete.guia_id, temperatura: palete.temperatura_zona }),
+      ip_terminal: '192.168.1.110 (Terminal Paletização)'
+    };
+    setAuditLogs(prev => [log, ...prev]);
+  };
+
   // Handler: Create Embarque Comprovante
   const handleCreateEmbarque = (comprovante: ComprovanteEmbarque) => {
     setComprovantesEmbarque(prev => [comprovante, ...prev]);
@@ -284,7 +305,7 @@ export default function App() {
           />
         )}
 
-        {/* Tab 2: Paletização */}
+        {/* Tab 2: Paletização Receção */}
         {activeTab === 'paletizacao' && (
           <PaletizacaoModule
             orders={orders}
@@ -293,6 +314,15 @@ export default function App() {
             selectedTenant={selectedTenant}
             onPalletCreated={handlePalletCreated}
             preSelectedOrderAndLine={preSelectedOrderAndLine}
+          />
+        )}
+
+        {/* Tab 2.5: Paletização Expedição (Auto-grupo temperatura) */}
+        {activeTab === 'paletizacao_expedicao' && (
+          <ExpedicaoPaletizacaoModule
+            guias={guiasEntrada}
+            onCreatePalete={handleCreatePaletaExpedicao}
+            onPrintSSCC={(palete) => console.log('Print SSCC:', palete)}
           />
         )}
 

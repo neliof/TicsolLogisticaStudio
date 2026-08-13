@@ -1,6 +1,7 @@
 export type AppTab =
   | 'rececao'
   | 'paletizacao'
+  | 'paletizacao_expedicao'
   | 'stock_mapa'
   | 'expedicao'
   | 'artsoft_sync'
