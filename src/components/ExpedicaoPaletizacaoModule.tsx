@@ -50,6 +50,7 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
   const [caixasPorCamada, setCaixasPorCamada] = useState<number>(10);
   const [numCamadas, setNumCamadas] = useState<number>(4);
   const [activePrintPallet, setActivePrintPallet] = useState<PalletSSCC | null>(null);
+  const [printPalletList, setPrintPalletList] = useState<PalletSSCC[]>([]); // múltiplas etiquetas
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   // Cálculos
@@ -111,30 +112,73 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
       qtdCaixas: caixasNaPaleteProposta
     });
 
-    // Criar palete para impressão
-    const newPallet: PalletSSCC = {
-      sscc: ssccFull,
-      guia_id: selectedGuia.id,
-      artigo_codigo: packingMode ? 'PACKING-LIST' : primeiraLinha.artigo_codigo,
-      artigo_descricao: packingMode ? `Packing List (${linhasApalete.length} produtos)` : primeiraLinha.artigo_descricao,
-      ean_barcode: primeiraLinha.ean_barcode,
-      lote: primeiraLinha.lote || 'LOTE-PADRAO',
-      data_validade: primeiraLinha.data_validade || '2027-12-31',
-      caixas_na_palete: caixasNaPaleteProposta,
-      unidades_totais: caixasNaPaleteProposta * 10,
-      camadas: numCamadas,
-      caixas_por_camada: caixasPorCamada,
-      altura_total_cm: alturaPaleteCm,
-      peso_liquido_kg: totalPeso * 0.9,
-      peso_bruto_kg: totalPeso + 22,
-      regrac_cliente_aplicada: 'SONAE_MC',
-      empresa_owner: selectedGuia.cliente_nome,
-      localizacao_atual: 'EM_STAGING',
-      estado_palete: 'EM_STAGING',
-      data_criacao: new Date().toISOString().replace('T', ' ').slice(0, 19),
-      operador: 'Op. Paletização Expedição',
-      gs1_128_barcode_string: gs1128Str
-    };
+    // Criar palete(s) para impressão
+    let palletesToPrint: PalletSSCC[] = [];
+
+    if (packingMode) {
+      // Gerar etiqueta individual por artigo
+      palletesToPrint = linhasApalete.map(linha => {
+        const ssccItem = generateSSCC(3, '5601234').ssccFull;
+        const validadeItem = formatToGS1Date(linha.data_validade || '2027-12-31');
+        const gs1Item = buildGS1128String({
+          sscc: ssccItem,
+          gtinEan: linha.ean_barcode,
+          lote: linha.lote || 'LOTE-STD',
+          validadeYYMMDD: validadeItem,
+          qtdCaixas: linha.quantidade_solicitada
+        });
+
+        return {
+          sscc: ssccItem,
+          guia_id: selectedGuia.id,
+          artigo_codigo: linha.artigo_codigo,
+          artigo_descricao: linha.artigo_descricao,
+          ean_barcode: linha.ean_barcode,
+          lote: linha.lote || 'LOTE-PADRAO',
+          data_validade: linha.data_validade || '2027-12-31',
+          caixas_na_palete: linha.quantidade_solicitada,
+          unidades_totais: linha.quantidade_solicitada * 10,
+          camadas: 1,
+          caixas_por_camada: linha.quantidade_solicitada,
+          altura_total_cm: 100,
+          peso_liquido_kg: linha.quantidade_solicitada * linha.peso_unitario_kg * 0.9,
+          peso_bruto_kg: linha.quantidade_solicitada * linha.peso_unitario_kg + 2,
+          regrac_cliente_aplicada: 'SONAE_MC',
+          empresa_owner: selectedGuia.cliente_nome,
+          localizacao_atual: 'EM_STAGING',
+          estado_palete: 'EM_STAGING',
+          data_criacao: new Date().toISOString().replace('T', ' ').slice(0, 19),
+          operador: 'Op. Paletização Expedição',
+          gs1_128_barcode_string: gs1Item
+        };
+      });
+    } else {
+      // Mono-produto: uma etiqueta única
+      const newPallet: PalletSSCC = {
+        sscc: ssccFull,
+        guia_id: selectedGuia.id,
+        artigo_codigo: primeiraLinha.artigo_codigo,
+        artigo_descricao: primeiraLinha.artigo_descricao,
+        ean_barcode: primeiraLinha.ean_barcode,
+        lote: primeiraLinha.lote || 'LOTE-PADRAO',
+        data_validade: primeiraLinha.data_validade || '2027-12-31',
+        caixas_na_palete: caixasNaPaleteProposta,
+        unidades_totais: caixasNaPaleteProposta * 10,
+        camadas: numCamadas,
+        caixas_por_camada: caixasPorCamada,
+        altura_total_cm: alturaPaleteCm,
+        peso_liquido_kg: totalPeso * 0.9,
+        peso_bruto_kg: totalPeso + 22,
+        regrac_cliente_aplicada: 'SONAE_MC',
+        empresa_owner: selectedGuia.cliente_nome,
+        localizacao_atual: 'EM_STAGING',
+        estado_palete: 'EM_STAGING',
+        data_criacao: new Date().toISOString().replace('T', ' ').slice(0, 19),
+        operador: 'Op. Paletização Expedição',
+        gs1_128_barcode_string: gs1128Str
+      };
+      palletesToPrint = [newPallet];
+    }
 
     // Criar palete expedição
     const paletaExpedicao: PaletaExpedicao = {
@@ -160,9 +204,16 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
 
     onPalletCreated(paletaExpedicao, selectedGuia.id, primeiraLinha.id, caixasNaPaleteProposta);
 
-    setToastMsg(`Palete SSCC ${ssccFull} criada! (${packingMode ? 'Packing List' : 'Mono-produto'})`);
+    setToastMsg(`Palete SSCC ${ssccFull} criada! (${packingMode ? `Packing List - ${palletesToPrint.length} etiquetas` : 'Mono-produto'})`);
     setTimeout(() => setToastMsg(null), 4000);
-    setActivePrintPallet(newPallet);
+
+    if (packingMode) {
+      setPrintPalletList(palletesToPrint);
+      setActivePrintPallet(null);
+    } else {
+      setActivePrintPallet(palletesToPrint[0]);
+      setPrintPalletList([]);
+    }
   };
 
   return (
@@ -175,16 +226,75 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
         </div>
       )}
 
-      {/* Print Modal */}
-      {activePrintPallet && (
-        <GS1LabelPrintModal
-          pallet={activePrintPallet}
-          onClose={() => setActivePrintPallet(null)}
-          packingListProducts={packingMode ? Array.from(selectedLinhasIds).map(id => {
-            const l = selectedGuia?.linhas.find(x => x.id === id);
-            return l ? { artigo_codigo: l.artigo_codigo, artigo_descricao: l.artigo_descricao, quantidade: l.quantidade_solicitada, lote: l.lote } : null;
-          }).filter(Boolean) as any : undefined}
-        />
+      {/* Print Modal - Single or Multiple */}
+      {(activePrintPallet || printPalletList.length > 0) && (
+        packingMode && printPalletList.length > 0 ? (
+          // Multiple labels for packing list
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto no-print">
+            <div className="relative bg-white border border-slate-200 rounded-xl shadow-2xl max-w-2xl w-full p-6 text-slate-900 my-8">
+              <div className="flex items-center justify-between border-b border-slate-200 pb-4 mb-4">
+                <h3 className="font-semibold text-lg text-slate-900">
+                  Etiquetas Packing List ({printPalletList.length} produtos)
+                </h3>
+                <button
+                  onClick={() => setPrintPalletList([])}
+                  className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="flex gap-4 mb-4">
+                <button
+                  onClick={() => window.print()}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg shadow-sm"
+                >
+                  🖨️ Imprimir {printPalletList.length} Etiquetas
+                </button>
+              </div>
+              <div className="space-y-6">
+                {printPalletList.map((pallet, idx) => (
+                  <div key={idx} className="bg-white text-black p-5 rounded-lg border-2 border-black shadow-lg print:page-break-after-always">
+                    <p className="text-center text-xs font-bold text-gray-600 mb-2">ETIQUETA {idx + 1}/{printPalletList.length}</p>
+                    <div className="border-b-2 border-black pb-2 mb-2">
+                      <div className="flex justify-between items-start text-[10px] font-bold">
+                        <div>
+                          <p className="uppercase text-[9px] text-gray-600">REMETENTE</p>
+                          <p className="font-extrabold text-[11px]">TicSol Logistics Hub</p>
+                          <p>Armazém Central</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="uppercase text-[9px] text-gray-600">DESTINATÁRIO</p>
+                          <p className="font-extrabold text-[11px]">{pallet.empresa_owner}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="border-b-2 border-black pb-2 mb-2">
+                      <p className="text-[9px] font-bold text-gray-600 uppercase">PRODUTO</p>
+                      <p className="font-bold text-sm">{pallet.artigo_descricao}</p>
+                      <p className="font-mono text-xs text-gray-800">Cód: {pallet.artigo_codigo}</p>
+                      <div className="grid grid-cols-2 gap-2 mt-2 text-[9px]">
+                        <div><span className="font-bold text-gray-600">LOTE</span><br/><span className="font-mono">{pallet.lote}</span></div>
+                        <div><span className="font-bold text-gray-600">VALIDADE</span><br/><span className="font-mono">{pallet.data_validade}</span></div>
+                        <div><span className="font-bold text-gray-600">QTD</span><br/><span className="font-mono font-bold text-amber-800">{pallet.caixas_na_palete} CX</span></div>
+                        <div><span className="font-bold text-gray-600">PESO</span><br/><span className="font-mono">{pallet.peso_bruto_kg} KG</span></div>
+                      </div>
+                    </div>
+                    <div className="text-center text-[8px] font-bold text-gray-600 mb-1">SSCC GS1-128</div>
+                    <div className="border-t-2 border-black pt-2 text-center">
+                      <p className="font-mono font-bold text-sm">{pallet.sscc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          // Single label for mono-produto
+          <GS1LabelPrintModal
+            pallet={activePrintPallet}
+            onClose={() => setActivePrintPallet(null)}
+          />
+        )
       )}
 
       {/* Module Title */}
