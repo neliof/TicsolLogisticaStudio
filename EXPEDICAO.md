@@ -1,202 +1,254 @@
-# Módulo Expedição — Workflow Sonae → Imefar
+# Módulo Expedição — Imefar (Distribuidor RAM) → Clientes
 
 ## Visão Geral
 
-Novo módulo para **Expedição de encomendas**:
-- **Cliente:** Sonae MC Distribuição (faz pedidos)
-- **Fornecedor:** Imefar (tem ERP ARTSOFT)
-- **Fluxo:** Pedido Compra → Paletização Multi-Produto → Guia Transporte
+**Imefar** = Armazenista/Distribuidor em RAM (Região Autónoma da Madeira)  
+**Clientes** = Sonae MC, Nívea, Tesa, Tena, e restantes  
+**Fluxo** = Encomenda ARTSOFT → Paletização em armazém → Embarque com etiquetas → Cliente recebe + Receção
 
-## Arquitetura
+## Arquitetura do Fluxo
 
 ```
-Pedido Compra (PC-2026-0051)
-├── 3 Linhas:
-│   ├── L001: 240x Azeite 5L (AMBIENTE)
-│   ├── L002: 600x Azeite 1L (AMBIENTE)
-│   └── L003: 480x Leite 1L (FRESCO — palete separada)
-│
-├── Paletização (Auto-calculada):
-│   ├── PAL-EXP-001: Azeites (240+600) → 1248kg, 145cm, AMBIENTE
-│   └── PAL-EXP-002: Leite (480) → 504kg, 165cm, FRESCO
-│
-└── Guia Transporte (Gerada):
-    ├── GT-PC-2026-0051-2026-08-12
-    ├── 2 paletes SSCC
-    ├── 1752kg, 2.1m³
-    ├── DHL + Frigorífico
-    └── Status: PRONTA_EMBARQUE
+1. Cliente (ex: Sonae MC) faz encomenda no ERP ARTSOFT de Imefar
+   ↓
+2. ARTSOFT gera Guia de Transporte (GT-2026-0051)
+   • Número único
+   • Morada entrega cliente
+   • Linhas com produtos (artigo, qtd, temperatura, validação)
+   ↓
+3. Armazém Imefar recebe Guia (status: RECEBIDA)
+   • Operador consulta Caderno de Encargos (temperatura, isolamento)
+   • Prepara mercadoria por zona térmica
+   ↓
+4. Paletização Automática (status: PREPARANDO)
+   • Agrupa linhas compatíveis (mesma temperatura)
+   • Respeita requisitos de isolamento
+   • Calcula peso/volume
+   • Gera SSCC (GS1 18-digit)
+   ↓
+5. Checklist Pré-Expedição (validação)
+   • Etiqueta SSCC visível ✓
+   • Peso/altura conforme limites ✓
+   • Documentação acompanhando ✓
+   • Temperatura verificada ✓
+   ↓
+6. Comprovante de Embarque (status: PRONTA_EMBARQUE → EXPEDIDA)
+   • Palete sai do armazém
+   • Registado transportador, motorista, hora
+   • Guia → status EXPEDIDA
+   ↓
+7. Transporte & Entrega (status: EM_TRANSITO → ENTREGUE)
+   • DHL/transportador em rota para cliente
+   • Cliente (Sonae) recebe
+   ↓
+8. Receção Cliente (módulo Receção Sonae)
+   • Verifica SSCC contra Guia
+   • Conta caixas/produtos
+   • Aceita ou rejeitação
 ```
 
-## Tipos
+## Tipos & Schema
 
+### GuiaTransporte (Entrada)
 ```typescript
-// Pedido de Compra (encomenda Sonae faz ao fornecedor)
-interface PedidoCompra {
+{
   id: string;
-  numero: string;
-  fornecedor_nome: string; // "Imefar"
-  artsoft_order_id: string; // ID ERP
-  status: 'PENDENTE' | 'CONFIRMADO' | 'PREPARANDO' | 'PRONTO' | 'EXPEDIDO' | 'ENTREGUE';
-  linhas: LinhaExpedicao[];
-}
-
-// Linha de Pedido (cada produto)
-interface LinhaExpedicao {
-  artigo_codigo: string;
-  quantidade_pedida: number;
-  temperatura_armazenamento: 'AMBIENTE' | 'FRESCO' | 'CONGELADO';
-  requer_palote_separada: boolean; // Se true, não mistura
-  status: 'NAO_INICIADA' | 'PREPARANDO' | 'PRONTA' | 'PALETIZADA' | 'EXPEDIDA';
-}
-
-// Palete para Expedição (múltiplos produtos compatíveis)
-interface PaletaExpedicao {
-  sscc: string; // Código GS1
-  pedido_id: string;
-  linhas_pedido: string[]; // Array de LinhaExpedicao.id
-  produtos: { artigo_codigo, quantidade, lote }[];
-  temperatura_requerida: string; // Mais restritiva das linhas
-  status: 'PREPARANDO' | 'PRONTA' | 'EMBARCADA';
-}
-
-// Guia de Transporte (emitida ao embarcar)
-interface GuiaTransporte {
-  numero_guia: string; // GT-PC-2026-0051-2026-08-12
-  pedido_compra_id: string;
-  paletes_sscc: string[]; // Array de SSCC
-  peso_total_kg: number;
-  volume_m3: number;
-  transportador_nome: string;
-  motorista_nome: string;
-  data_saida_prevista: string;
-  status: 'RASCUNHO' | 'PRONTA_EMBARQUE' | 'EMBARCADA' | 'EM_TRANSITO' | 'ENTREGUE';
+  numero_guia: string;           // GT-2026-0051 (gerada ARTSOFT)
+  cliente_nome: string;           // "Sonae MC Distribuição"
+  cliente_nif: string;
+  morada_entrega: string;
+  data_entrega_prevista: string;
+  artsoft_order_id: string;      // Link com ERP Imefar
+  linhas: LinhaGuia[];           // Produtos da encomenda
+  status: 'RECEBIDA' | 'PREPARANDO' | 'PALETIZADA' | 'PRONTA_EMBARQUE' | 'EXPEDIDA' | 'ENTREGUE';
 }
 ```
 
-## Fluxo Funcional
-
-### 1. Receber Pedido Compra (CONFIRMADO)
-```
-Sonae → Imefar: "Preciso de 240x Azeite 5L + 600x Azeite 1L + 480x Leite"
-ARTSOFT gera: PC-2026-0051 com 3 linhas
-Status: CONFIRMADO
-```
-
-### 2. Preparar Mercadoria (PREPARANDO)
-```
-Armazém Imefar separa produtos por temperatura:
-- Grupo AMBIENTE: Azeites (compatíveis)
-- Grupo FRESCO: Leite (isolado)
-
-Atualiza linhas: NAO_INICIADA → PREPARANDO
-```
-
-### 3. Calcular Paletização (Auto-calculada)
+### LinhaGuia
 ```typescript
-// Regra: produtos mesmo grupo térmico na mesma palete
-PaletaExpedicao[] = [
-  { sscc: '66123450001234500015', linhas: [L001, L002], temp: 'AMBIENTE' },
-  { sscc: '66123450001234500016', linhas: [L003], temp: 'FRESCO' }
-]
+{
+  artigo_codigo: string;         // "NIV-200"
+  artigo_descricao: string;      // "Nívea Creme 200ml"
+  quantidade_solicitada: number;
+  temperatura_armazenamento: 'AMBIENTE' | 'FRESCO' | 'CONGELADO';
+  requer_palote_separada: boolean;  // isolamento forçado
+  peso_unitario_kg: number;
+  status: 'PENDENTE' | 'PREPARANDO' | 'PALETIZADA' | 'PRONTA';
+}
 ```
 
-### 4. Validar Checklist Pré-Expedição
-```
-☑ Todas linhas preparadas
-☑ Paletas com SSCC válidos
-☑ Documentação ARTSOFT OK
-☑ Temperaturas confirmadas
-☑ Transporte frigorífico disponível
-☑ Peso/volume dentro limites
-```
-
-### 5. Gerar Guia Transporte (AUTO)
-```
-Botão "Gerar e Expedir":
-- Cria GuiaTransporte
-- Agrega SSCCs
-- Calcula peso total
-- Assign transportador (DHL, etc.)
-- Emite GT-PC-2026-0051-2026-08-12
-- Atualiza status → EXPEDIDO
-- Log auditoria criado
+### PaletaExpedicao (Interna)
+```typescript
+{
+  sscc: string;                  // GS1 18-digit
+  guia_id: string;               // Link com GuiaTransporte
+  linhas_guia: string[];         // Produtos agrupados
+  temperatura_zona: string;      // Mais restritiva
+  peso_total_kg: number;
+  volume_total_m3: number;
+  status: 'PREPARANDO' | 'ETIQUETADA' | 'PRONTA_EMBARQUE' | 'EMBARCADA';
+  etiqueta_sscc_url: string;     // Base64 etiqueta impressa
+}
 ```
 
-### 6. Embarcar e Sincronizar
+### ChecklistExpedicao (Validação)
+```typescript
+{
+  palete_id: string;
+  guia_id: string;
+  cliente_nome: string;
+  itens: {
+    desc: string;                // "Etiqueta SSCC visível"
+    completo: boolean;
+  }[];
+  status: 'PENDENTE' | 'VERIFICADO' | 'REPROVADO';
+  observacoes: string;
+}
 ```
-- Status: PRONTA_EMBARQUE → EMBARCADA
-- ARTSOFT atualiza ordem: "Expedida"
-- Guia enviada via EDI ao transportador
-- Rastreio iniciado
+
+### ComprovanteEmbarque (Saída)
+```typescript
+{
+  id: string;
+  guia_id: string;               // Link com GuiaTransporte
+  paletes_sscc: string[];        // Paletas que saíram
+  peso_real_kg: number;          // Verificado na balança
+  transportador_nome: string;    // "DHL Logistics"
+  motorista_nome: string;
+  temperatura_veiculo_c: number; // -18, +4, +22
+  data_saida: string;
+  hora_saida: string;
+  status: 'EMBARQUE_CONFIRMADO' | 'EM_TRANSITO' | 'ENTREGUE';
+}
 ```
 
-## Integrações
+## Caderno de Encargos (Requisitos)
 
-### Com Receção
-Não diretamente — Expedição é para **encomendas que Imefar faz enviar a Sonae**.
+Cada cliente tem regras no ARTSOFT:
 
-### Com ARTSOFT
-- Lê: `Pedido Compra` (PC-NNNN-NNNN)
-- Lê: Stock disponível por lote/temperatura
-- Escreve: Status palete (`PALETIZADA`)
-- Escreve: Guia transporte (`EXPEDIDA`)
-- Escreve: Log auditoria
+| Requisito | Sonae MC | Nívea | Tesa | Tena | Lactogal |
+|-----------|----------|-------|------|------|----------|
+| Altura máx palete | 200cm | 200cm | 180cm | 200cm | 200cm |
+| Peso máximo | 1500kg | 1200kg | 1000kg | 1500kg | 1500kg |
+| Temperatura isol | FRESCO isol | Sim | Não | Não | Sim (congelado) |
+| Etiqueta formato | A5 105x148 | A5 | A6 | A5 | A5 |
+| Rastreio | DHL | DHL/GLS | CTT | CTT/DHL | DHL |
 
-### Com Paletização
-A paletização é **automática** baseada em:
-1. Temperatura de armazenamento
-2. Requisitos `requer_palote_separada`
-3. Peso máximo palete (1500kg)
-4. Altura máxima (200cm)
-
-## Campos Críticos
-
-| Campo | Função | Validação |
-|-------|--------|-----------|
-| `temperature_armazenamento` | Agrupa produtos compatíveis | AMBIENTE < FRESCO < CONGELADO |
-| `requer_palote_separada` | Força isolamento (leite, congelados) | Boolean, consultado no ARTSOFT |
-| `artsoft_order_id` | Link com ERP | Único por Pedido |
-| `data_entrega_prevista` | SLA client | > data_hoje |
-
-## Dados Mock
-
-Ficheiro: `src/data/mockExpedicao.ts`
+## Estados & Transições
 
 ```
-INITIAL_PEDIDOS_COMPRA = [
-  PC-2026-0051 (PREPARANDO): 3 linhas, 1752kg total
-  PC-2026-0052 (CONFIRMADO): 1 linha, manteiga biológica
-]
+GuiaTransporte:
+  RECEBIDA → PREPARANDO → PALETIZADA → PRONTA_EMBARQUE → EXPEDIDA → ENTREGUE
 
-INITIAL_PALETAS_EXPEDICAO = [
-  PAL-EXP-001: 66123450001234500015 (azeites)
-  PAL-EXP-002: 66123450001234500016 (leite)
-]
+PaletaExpedicao:
+  PREPARANDO → ETIQUETADA → PRONTA_EMBARQUE → EMBARCADA
 
-INITIAL_GUIAS_TRANSPORTE = [
-  GT-001: GT-PC-2026-0051-2026-08-12 (PRONTA_EMBARQUE)
-]
+ChecklistExpedicao:
+  PENDENTE → VERIFICADO (ou REPROVADO → bloqueada)
+
+ComprovanteEmbarque:
+  EMBARQUE_CONFIRMADO → EM_TRANSITO → ENTREGUE
 ```
+
+## Mock Data
+
+**Guias de entrada:**
+- GT-2026-0051: Sonae MC (3 linhas: Nívea, Tesa, Tena)
+- GT-2026-0052: Lactogal (1 linha: Nespresso FRESCO)
+
+**Paletas:**
+- PAL-001: SSCC 36000100001000000001 (AMBIENTE: Nívea+Tesa+Tena)
+- PAL-002: SSCC 36000100001000000002 (FRESCO: Nespresso)
+
+**Checklist:**
+- CHK-001: Palete 001 verificada ✓
+
+**Comprovantes:**
+- EMB-001: Saída 2026-08-12 15:45 (DHL Standard)
+
+## Integração com Módulos
+
+### Com Receção (Sonae)
+- Quando Cliente recebe, escaneia SSCC
+- Módulo Receção Sonae procura GuiaTransporte.linhas
+- Valida quantidade, temperatura, lote
+- Log auditoria ligado
+
+### Com ARTSOFT (Imefar)
+- Lê: GuiaTransporte criada no ARTSOFT
+- Escreve: Status palete (PALETIZADA)
+- Escreve: ComprovanteEmbarque registado
+- RPC: `fn_registar_embarque(guia_id, paletas, transportador)`
+
+### Com Stock (Armazém)
+- Paletização consome Stock
+- Stock.posicao atualizada: EM_STAGING → EM_EXPEDICO
+- Peso verificado na balança
+
+### Com Auditoria
+- Cada ação registada:
+  - RECEBER_GUIA
+  - CONFIRMAR_PALETIZACAO
+  - REGISTAR_EMBARQUE
+  - Log inclui operador, IP terminal, timestamp
 
 ## Próximas Features
 
-1. **Integração ARTSOFT Real**
-   - Sync automático de Pedidos Compra
-   - Atualizar stock em tempo real
+1. **Integração ARTSOFT real**
+   - Sync automático de GuiasTransporte
+   - Atualizar status em tempo real
 
-2. **Rastreio de Transportador**
-   - Webhook de status (em trânsito, entregue)
-   - Sincronizar com Sonae
+2. **Rastreio transportador**
+   - Webhook DHL → status EM_TRANSITO, ENTREGUE
+   - Sincronizar com cliente via API
 
-3. **Etiquetas de Palete**
-   - Gerar código de barras SSCC
-   - Imprimir label frigorífico
+3. **Geração etiquetas SSCC**
+   - GS1-128 barcode + info palete
+   - Print A5 105x148mm (Sonae) ou A6 (Nívea)
 
-4. **Alocação Dinâmica de Transporte**
-   - Calcular automático de transportador
-   - Otimizar rotas
+4. **Alocação dinâmica transportador**
+   - Calcular automático baseado em:
+     - Temperatura necessária
+     - Rota cliente
+     - Custo transportador
+   - Otimizar consolidação
 
-5. **Devolução e Tratamento**
-   - Registar produtos rejeitados
-   - Nota de crédito automática
+5. **Devolução & Tratamento**
+   - Cliente rejeita palete
+   - Criar Nota de Crédito automática no ARTSOFT
+   - Reclassificar mercadoria em armazém
+
+6. **Mobile PDA**
+   - Operador escaneia GuiaTransporte
+   - Confirma produtos preparados
+   - Gera etiqueta SSCC (impressora portatil)
+   - Registar embarque via app
+
+## Endpoints API
+
+```
+GET  /rest/v1/guia_transporte          → listar guias entrada
+POST /rest/v1/guia_transporte          → criar guia (ARTSOFT webhook)
+GET  /rest/v1/palete_expedicao         → listar paletas
+POST /rest/v1/palete_expedicao         → criar palete
+GET  /rest/v1/comprovante_embarque     → listar saídas
+POST /rest/v1/comprovante_embarque     → registar embarque
+
+RPC:
+  fn_confirmar_paletizacao(guia_id)
+  fn_registar_embarque(guia_id, paletas[], transportador)
+  fn_gerar_etiqueta_sscc(palete_id) → base64 PDF
+```
+
+## Ambiente
+
+- **Armazenista:** Imefar (RAM)
+- **Clientes:** Sonae MC (Maia), Lactogal (Barreiro), Nívea, Tesa, Tena
+- **Transportadores:** DHL, GLS, CTT
+- **Temperaturas:** AMBIENTE (22°C), FRESCO (2-6°C), CONGELADO (-18°C)
+
+---
+
+**Desenvolvido:** TicSol Logistics Studio  
+**Commit:** `5b77494` (refactor Expedição logic)  
+**Data:** 2026-08-13
