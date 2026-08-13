@@ -44,6 +44,18 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
   const [packingMode, setPackingMode] = useState(false);
   const [selectedLinhasIds, setSelectedLinhasIds] = useState<Set<string>>(new Set([selectedLinhaId]));
 
+  // Label format selector
+  type LabelFormat = 'A4' | 'A5' | 'Zebra4x6' | 'Zebra100x150';
+  const [labelFormat, setLabelFormat] = useState<LabelFormat>('A4');
+
+  const labelFormats: Record<LabelFormat, { label: string; width: string; height: string; padding: string; textScale: number }> = {
+    A4: { label: 'A4 (210x297mm)', width: 'w-full', height: 'min-h-[280mm]', padding: 'p-8', textScale: 1 },
+    A5: { label: 'A5 (105x148mm)', width: 'max-w-xs', height: 'min-h-[140mm]', padding: 'p-4', textScale: 0.75 },
+    Zebra4x6: { label: 'Zebra 4x6" (101x152mm)', width: 'max-w-sm', height: 'min-h-[150mm]', padding: 'p-4', textScale: 0.8 },
+    Zebra100x150: { label: 'Zebra 100x150mm', width: 'max-w-sm', height: 'min-h-[150mm]', padding: 'p-3', textScale: 0.75 }
+  };
+  const currentFormat = labelFormats[labelFormat];
+
   // Rule: Sonae MC caderno de encargos
   const activeRule = ruleConfigs.find(r => r.cliente_id === 'SONAE_MC') || ruleConfigs[0];
 
@@ -232,7 +244,7 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
         packingMode && printPalletList.length > 0 ? (
           // Multiple labels for packing list
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto no-print">
-            <div className="relative bg-white border border-slate-200 rounded-xl shadow-2xl max-w-2xl w-full p-6 text-slate-900 my-8">
+            <div className="relative bg-white border border-slate-200 rounded-xl shadow-2xl max-w-4xl w-full p-6 text-slate-900 my-8">
               <div className="flex items-center justify-between border-b border-slate-200 pb-4 mb-4">
                 <h3 className="font-semibold text-lg text-slate-900">
                   Etiquetas Packing List ({printPalletList.length} produtos)
@@ -244,17 +256,38 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
                   ✕
                 </button>
               </div>
+
+              {/* Format Selector */}
+              <div className="mb-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                <label className="text-sm font-semibold text-slate-700 block mb-2">Formato de Etiqueta:</label>
+                <div className="flex gap-2 flex-wrap">
+                  {Object.entries(labelFormats).map(([format, data]) => (
+                    <button
+                      key={format}
+                      onClick={() => setLabelFormat(format as LabelFormat)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                        labelFormat === format
+                          ? 'bg-purple-600 text-white border-2 border-purple-700'
+                          : 'bg-white text-slate-700 border-2 border-slate-300 hover:bg-slate-100'
+                      }`}
+                    >
+                      {data.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="flex gap-4 mb-4">
                 <button
                   onClick={() => window.print()}
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg shadow-sm"
                 >
-                  🖨️ Imprimir {printPalletList.length} Etiquetas
+                  🖨️ Imprimir {printPalletList.length} Etiquetas ({labelFormat})
                 </button>
               </div>
-              <div className="space-y-4">
+              <div className={`space-y-4 ${labelFormat !== 'A4' ? 'flex flex-wrap gap-4 justify-center' : ''}`}>
                 {printPalletList.map((pallet, idx) => (
-                  <div key={idx} className="bg-white text-black p-8 rounded-lg border-2 border-black shadow-lg print:page-break-after-always min-h-[280mm] print:min-h-[297mm]">
+                  <div key={idx} className={`bg-white text-black ${currentFormat.padding} rounded-lg border-2 border-black shadow-lg print:page-break-after-always ${currentFormat.height} ${currentFormat.width}`} style={{ fontSize: `${currentFormat.textScale * 16}px` }}>
                     <p className="text-center text-sm font-bold text-gray-600 mb-4">ETIQUETA LOGÍSTICA {idx + 1}/{printPalletList.length}</p>
 
                     {/* Header */}
