@@ -1,7 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { GuiaTransporte, PaletaExpedicao, LinhaGuia } from '../types/expedicao';
-import { generateSSCC } from '../utils/gs1';
-import { Barcode, Layers, Printer, AlertTriangle, CheckCircle2, Plus, Truck } from 'lucide-react';
+import { PalletSSCC } from '../types/wms';
+import { generateSSCC, buildGS1128String, formatToGS1Date } from '../utils/gs1';
+import { GS1LabelPrintModal } from './GS1LabelPrintModal';
+import { Barcode, Layers, Printer, AlertTriangle, CheckCircle2, Plus, Truck, Download } from 'lucide-react';
 
 interface ExpedicaoPaletizacaoModuleProps {
   guias: GuiaTransporte[];
@@ -24,6 +26,8 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
 }) => {
   const [selectedGuiaId, setSelectedGuiaId] = useState<string>(guias[0]?.id || '');
   const [selectedTemperatura, setSelectedTemperatura] = useState<'AMBIENTE' | 'FRESCO' | 'CONGELADO'>('AMBIENTE');
+  const [paleteCriada, setPaleteCriada] = useState<PalletSSCC | null>(null);
+  const [showPrintModal, setShowPrintModal] = useState(false);
 
   const selectedGuia = guias.find(g => g.id === selectedGuiaId) || guias[0];
 
@@ -86,12 +90,70 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
       operador_criacao: 'Op. Paletização #42'
     };
 
+    // Criar PalletSSCC para impressão (reutilizar GS1LabelPrintModal)
+    const primeiroLinha = grupoSelecionado.linhas[0];
+    const gs1128Str = buildGS1128String({
+      sscc,
+      gtinEan: primeiroLinha.ean_barcode,
+      lote: primeiroLinha.lote,
+      validadeYYMMDD: formatToGS1Date(primeiroLinha.data_validade)
+    });
+
+    const palletePrinter: PalletSSCC = {
+      sscc,
+      guia_id: selectedGuia.id,
+      artigo_codigo: primeiroLinha.artigo_codigo,
+      artigo_descricao: `${selectedTemperatura} - ${grupoSelecionado.linhas.length} produto(s)`,
+      ean_barcode: primeiroLinha.ean_barcode,
+      lote: primeiroLinha.lote,
+      data_validade: primeiroLinha.data_validade,
+      caixas_na_palete: grupoSelecionado.linhas.reduce((sum, l) => sum + l.quantidade_solicitada, 0),
+      unidades_totais: grupoSelecionado.linhas.reduce((sum, l) => sum + l.quantidade_solicitada * 10, 0),
+      camadas: 4,
+      caixas_por_camada: 10,
+      altura_total_cm: 140,
+      peso_liquido_kg: grupoSelecionado.peso_total_kg * 0.9,
+      peso_bruto_kg: grupoSelecionado.peso_total_kg,
+      regrac_cliente_aplicada: 'PADRAO_LOGISTICS',
+      empresa_owner: selectedGuia.cliente_nome,
+      localizacao_atual: 'EM_STAGING',
+      estado_palete: 'EM_STAGING',
+      data_criacao: new Date().toISOString().replace('T', ' ').slice(0, 19),
+      operador: 'Op. Paletização Expedição',
+      gs1_128_barcode_string: gs1128Str
+    };
+
+    setPaleteCriada(palletePrinter);
     onCreatePalete(palete);
-    alert(`Palete criada: ${sscc}`);
+    setShowPrintModal(true);
   };
 
   return (
     <div className="space-y-6">
+      {/* Print Modal */}
+      {paleteCriada && showPrintModal && (
+        <GS1LabelPrintModal
+          pallet={paleteCriada}
+          onClose={() => setShowPrintModal(false)}
+        />
+      )}
+
+      {/* Toast: Palete Criada */}
+      {paleteCriada && !showPrintModal && (
+        <div className="fixed bottom-6 right-6 z-50 bg-green-500 text-white font-bold px-4 py-3 rounded-lg shadow-xl flex items-center gap-3 animate-bounce border border-green-400">
+          <CheckCircle2 className="w-5 h-5" />
+          <div className="flex flex-col">
+            <span>Palete criada: {paleteCriada.sscc}</span>
+            <button
+              onClick={() => setShowPrintModal(true)}
+              className="text-xs mt-1 underline hover:text-green-100"
+            >
+              Clica para imprimir etiqueta
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6 rounded-lg">
         <div className="flex items-center gap-3 mb-2">
@@ -233,6 +295,78 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
           </div>
         )}
       </div>
+
+      {/* Palete Criada — Preview */}
+      {paleteCriada && (
+        <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 space-y-4">
+          <h2 className="font-semibold text-sm text-slate-900 flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5 text-green-600" />
+            Palete Materializada
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Left: SSCC + Detalhes */}
+            <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
+              <div>
+                <span className="text-xs text-slate-500 block mb-1">SSCC GS1-18</span>
+                <span className="font-mono font-bold text-lg text-blue-600">{paleteCriada.sscc}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div>
+                  <span className="text-slate-500 block">Temperatura</span>
+                  <span className="font-bold text-slate-900">{selectedTemperatura}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block">Status</span>
+                  <span className="font-bold text-amber-600">PREPARANDO</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block">Peso</span>
+                  <span className="font-bold text-slate-900">{paleteCriada.peso_bruto_kg}kg</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block">Altura</span>
+                  <span className="font-bold text-slate-900">{paleteCriada.altura_total_cm}cm</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Visual Stack Preview */}
+            <div className="flex flex-col justify-between">
+              <div className="flex flex-col gap-1 bg-amber-50 p-3 rounded-lg border border-amber-200 font-mono text-xs">
+                <div className="h-5 bg-amber-900/80 border border-amber-700/60 rounded flex items-center justify-around px-2 text-[9px] font-mono text-amber-300 font-bold shadow-md">
+                  <span>|||</span>
+                  <span>EURO PALLET 120x80</span>
+                  <span>|||</span>
+                </div>
+
+                {Array.from({ length: 4 }).map((_, layerIdx) => (
+                  <div
+                    key={layerIdx}
+                    className="h-7 bg-amber-500/20 border border-amber-500/40 rounded flex items-center justify-center text-xs font-mono font-bold text-amber-300 transition-all hover:bg-amber-500/30"
+                  >
+                    Camada {layerIdx + 1}
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setShowPrintModal(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-lg text-sm transition-all flex items-center justify-center gap-2 mt-3"
+              >
+                <Printer className="w-4 h-4" />
+                Imprimir Etiqueta
+              </button>
+            </div>
+          </div>
+
+          {/* GS1-128 String */}
+          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+            <span className="text-xs text-slate-500 block mb-1">GS1-128 Barcode String</span>
+            <span className="font-mono text-xs text-slate-700 break-all">{paleteCriada.gs1_128_barcode_string}</span>
+          </div>
+        </div>
+      )}
 
       {/* Info Box */}
       <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg text-sm text-amber-800">
