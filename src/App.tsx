@@ -321,8 +321,9 @@ export default function App() {
         {activeTab === 'paletizacao_expedicao' && (
           <ExpedicaoPaletizacaoModule
             guias={guiasEntrada}
-            onCreatePalete={handleCreatePaletaExpedicao}
-            onPrintSSCC={(palete) => console.log('Print SSCC:', palete)}
+            ruleConfigs={rules}
+            selectedTenant={selectedTenant}
+            onPalletCreated={handleCreatePaletaExpedicao}
           />
         )}
 
