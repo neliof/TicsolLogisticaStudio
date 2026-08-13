@@ -252,54 +252,69 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
                   🖨️ Imprimir {printPalletList.length} Etiquetas
                 </button>
               </div>
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {printPalletList.map((pallet, idx) => (
-                  <div key={idx} className="bg-white text-black p-5 rounded-lg border-2 border-black shadow-lg print:page-break-after-always">
-                    <p className="text-center text-xs font-bold text-gray-600 mb-2">ETIQUETA {idx + 1}/{printPalletList.length}</p>
-                    <div className="border-b-2 border-black pb-2 mb-2">
-                      <div className="flex justify-between items-start text-[10px] font-bold">
+                  <div key={idx} className="bg-white text-black p-8 rounded-lg border-2 border-black shadow-lg print:page-break-after-always min-h-[280mm] print:min-h-[297mm]">
+                    <p className="text-center text-sm font-bold text-gray-600 mb-4">ETIQUETA LOGÍSTICA {idx + 1}/{printPalletList.length}</p>
+
+                    {/* Header */}
+                    <div className="border-b-4 border-black pb-4 mb-4">
+                      <div className="flex justify-between items-start text-sm font-bold">
                         <div>
-                          <p className="uppercase text-[9px] text-gray-600">REMETENTE</p>
-                          <p className="font-extrabold text-[11px]">TicSol Logistics Hub</p>
-                          <p>Armazém Central</p>
+                          <p className="uppercase text-xs text-gray-600 font-bold">Remetente / Expedidor</p>
+                          <p className="font-extrabold text-base">TicSol Logistics Hub B2B</p>
+                          <p className="text-sm">Armazém Central Lisboa</p>
+                          <p className="text-sm">NIF: 509876543</p>
                         </div>
                         <div className="text-right">
-                          <p className="uppercase text-[9px] text-gray-600">DESTINATÁRIO</p>
-                          <p className="font-extrabold text-[11px]">{pallet.empresa_owner}</p>
+                          <p className="uppercase text-xs text-gray-600 font-bold">Destinatário</p>
+                          <p className="font-extrabold text-base">{pallet.empresa_owner}</p>
+                          <p className="text-sm">Plataforma Logística</p>
                         </div>
                       </div>
                     </div>
-                    <div className="border-b-2 border-black pb-2 mb-2">
-                      <p className="text-[9px] font-bold text-gray-600 uppercase">PRODUTO</p>
-                      <p className="font-bold text-sm">{pallet.artigo_descricao}</p>
-                      <p className="font-mono text-xs text-gray-800">Cód: {pallet.artigo_codigo}</p>
-                      <div className="grid grid-cols-2 gap-2 mt-2 text-[9px]">
-                        <div><span className="font-bold text-gray-600">LOTE</span><br/><span className="font-mono">{pallet.lote}</span></div>
-                        <div><span className="font-bold text-gray-600">VALIDADE</span><br/><span className="font-mono">{pallet.data_validade}</span></div>
-                        <div><span className="font-bold text-gray-600">QTD</span><br/><span className="font-mono font-bold text-amber-800">{pallet.caixas_na_palete} CX</span></div>
-                        <div><span className="font-bold text-gray-600">PESO</span><br/><span className="font-mono">{pallet.peso_bruto_kg} KG</span></div>
+
+                    {/* Produto Info */}
+                    <div className="border-b-4 border-black pb-4 mb-4">
+                      <p className="uppercase text-xs font-bold text-gray-600 mb-2">Descrição do Produto</p>
+                      <p className="font-bold text-lg">{pallet.artigo_descricao}</p>
+                      <p className="font-mono text-sm text-gray-800 mb-3">Código: {pallet.artigo_codigo}</p>
+
+                      <div className="grid grid-cols-4 gap-3 text-sm font-bold">
+                        <div>
+                          <p className="uppercase text-xs text-gray-600">Lote (10)</p>
+                          <p className="font-mono text-base">{pallet.lote}</p>
+                        </div>
+                        <div>
+                          <p className="uppercase text-xs text-gray-600">Validade (15)</p>
+                          <p className="font-mono text-base">{pallet.data_validade}</p>
+                        </div>
+                        <div>
+                          <p className="uppercase text-xs text-gray-600">Quantidade (37)</p>
+                          <p className="font-mono text-base text-amber-800">{pallet.caixas_na_palete} CX</p>
+                        </div>
+                        <div>
+                          <p className="uppercase text-xs text-gray-600">Peso Bruto</p>
+                          <p className="font-mono text-base">{pallet.peso_bruto_kg} KG</p>
+                        </div>
                       </div>
                     </div>
 
                     {/* GS1-128 Barcode */}
-                    <div className="border-b-2 border-black pb-2 mb-2 text-center">
-                      <p className="text-[8px] font-bold text-gray-600 mb-1">GS1-128</p>
+                    <div className="border-b-4 border-black pb-4 mb-4 text-center">
+                      <p className="uppercase text-xs font-bold text-gray-600 mb-3">GS1-128 Produto (GTIN + Lote + Validade + QTD)</p>
                       <div className="flex justify-center">
-                        <div style={{ transform: 'scale(0.6)', transformOrigin: 'top center', marginBottom: '-20px' }}>
-                          <BarcodeRenderer value={pallet.gs1_128_barcode_string} height={30} />
-                        </div>
+                        <BarcodeRenderer value={pallet.gs1_128_barcode_string} height={60} />
                       </div>
                     </div>
 
-                    {/* SSCC Barcode */}
-                    <div className="border-t-2 border-black pt-2 text-center">
-                      <p className="text-[8px] font-bold text-gray-600 mb-1">SSCC GS1-18</p>
-                      <div className="flex justify-center">
-                        <div style={{ transform: 'scale(0.7)', transformOrigin: 'top center', marginBottom: '-10px' }}>
-                          <BarcodeRenderer value={pallet.sscc} height={40} />
-                        </div>
+                    {/* SSCC Barcode - Large */}
+                    <div className="border-t-4 border-black pt-4 text-center flex-1">
+                      <p className="uppercase text-xs font-bold text-gray-600 mb-3">SSCC GS1-18 Palete</p>
+                      <div className="flex justify-center mb-3">
+                        <BarcodeRenderer value={pallet.sscc} height={80} />
                       </div>
-                      <p className="font-mono font-bold text-xs mt-1">{pallet.sscc}</p>
+                      <p className="font-mono font-bold text-xl tracking-widest">{pallet.sscc}</p>
                     </div>
                   </div>
                 ))}
