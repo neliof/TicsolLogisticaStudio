@@ -6,9 +6,10 @@ import { X, Printer, CheckCircle2, ShieldCheck, Tag } from 'lucide-react';
 interface GS1LabelPrintModalProps {
   pallet: PalletSSCC | null;
   onClose: () => void;
+  packingListProducts?: Array<{ artigo_codigo: string; artigo_descricao: string; quantidade: number; lote: string }>;
 }
 
-export const GS1LabelPrintModal: React.FC<GS1LabelPrintModalProps> = ({ pallet, onClose }) => {
+export const GS1LabelPrintModal: React.FC<GS1LabelPrintModalProps> = ({ pallet, onClose, packingListProducts }) => {
   if (!pallet) return null;
 
   const handlePrint = () => {
@@ -73,31 +74,51 @@ export const GS1LabelPrintModal: React.FC<GS1LabelPrintModalProps> = ({ pallet, 
           </div>
 
           {/* Section 2: Article & Batch Metadata */}
-          <div className="border-b-2 border-black pb-2 mb-2 grid grid-cols-2 gap-2 text-[11px]">
-            <div className="col-span-2">
-              <span className="text-[9px] font-bold text-gray-600 block uppercase">DESCRIÇÃO DO PRODUTO</span>
-              <span className="font-bold text-sm text-black block leading-tight">{pallet.artigo_descricao}</span>
-              <span className="font-mono text-xs text-gray-800">Cód: {pallet.artigo_codigo}</span>
-            </div>
-            
-            <div className="border-t border-gray-300 pt-1">
-              <span className="text-[9px] font-bold text-gray-600 block">LOTE (10)</span>
-              <span className="font-mono font-bold text-xs">{pallet.lote}</span>
+          <div className="border-b-2 border-black pb-2 mb-2 text-[11px]">
+            <div className="mb-2">
+              <span className="text-[9px] font-bold text-gray-600 block uppercase">
+                {packingListProducts ? 'PACKING LIST (MÚLTIPLOS PRODUTOS)' : 'DESCRIÇÃO DO PRODUTO'}
+              </span>
+              {packingListProducts ? (
+                <div className="space-y-1 mt-1">
+                  {packingListProducts.map((prod, idx) => (
+                    <div key={idx} className="text-[9px] border-t border-gray-300 pt-1">
+                      <span className="font-bold text-black">{prod.artigo_descricao}</span>
+                      <div className="flex justify-between font-mono">
+                        <span>Cód: {prod.artigo_codigo}</span>
+                        <span className="font-bold text-amber-800">{prod.quantidade} un</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  <span className="font-bold text-sm text-black block leading-tight">{pallet.artigo_descricao}</span>
+                  <span className="font-mono text-xs text-gray-800">Cód: {pallet.artigo_codigo}</span>
+                </>
+              )}
             </div>
 
-            <div className="border-t border-gray-300 pt-1">
-              <span className="text-[9px] font-bold text-gray-600 block">VALIDADE (15)</span>
-              <span className="font-mono font-bold text-xs">{pallet.data_validade}</span>
-            </div>
+            <div className="grid grid-cols-2 gap-2 border-t border-gray-300 pt-2">
+              <div>
+                <span className="text-[9px] font-bold text-gray-600 block">LOTE (10)</span>
+                <span className="font-mono font-bold text-xs">{pallet.lote}</span>
+              </div>
 
-            <div className="border-t border-gray-300 pt-1">
-              <span className="text-[9px] font-bold text-gray-600 block">QTD CAIXAS (37)</span>
-              <span className="font-mono font-bold text-sm text-amber-800">{pallet.caixas_na_palete} CX</span>
-            </div>
+              <div>
+                <span className="text-[9px] font-bold text-gray-600 block">VALIDADE (15)</span>
+                <span className="font-mono font-bold text-xs">{pallet.data_validade}</span>
+              </div>
 
-            <div className="border-t border-gray-300 pt-1">
-              <span className="text-[9px] font-bold text-gray-600 block">PESO BRUTO</span>
-              <span className="font-mono font-bold text-xs">{pallet.peso_bruto_kg} KG</span>
+              <div>
+                <span className="text-[9px] font-bold text-gray-600 block">QTD CAIXAS (37)</span>
+                <span className="font-mono font-bold text-sm text-amber-800">{pallet.caixas_na_palete} CX</span>
+              </div>
+
+              <div>
+                <span className="text-[9px] font-bold text-gray-600 block">PESO BRUTO</span>
+                <span className="font-mono font-bold text-xs">{pallet.peso_bruto_kg} KG</span>
+              </div>
             </div>
           </div>
 

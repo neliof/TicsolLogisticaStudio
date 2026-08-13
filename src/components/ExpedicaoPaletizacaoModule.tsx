@@ -180,6 +180,10 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
         <GS1LabelPrintModal
           pallet={activePrintPallet}
           onClose={() => setActivePrintPallet(null)}
+          packingListProducts={packingMode ? Array.from(selectedLinhasIds).map(id => {
+            const l = selectedGuia?.linhas.find(x => x.id === id);
+            return l ? { artigo_codigo: l.artigo_codigo, artigo_descricao: l.artigo_descricao, quantidade: l.quantidade_solicitada, lote: l.lote } : null;
+          }).filter(Boolean) as any : undefined}
         />
       )}
 
