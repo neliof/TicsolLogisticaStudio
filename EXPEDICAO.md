@@ -17,34 +17,38 @@
    • Linhas com produtos (artigo, qtd, temperatura, validação)
    ↓
 3. Armazém Imefar recebe Guia (status: RECEBIDA)
-   • Operador consulta Caderno de Encargos (temperatura, isolamento)
-   • Prepara mercadoria por zona térmica
    ↓
-4. Paletização Automática (status: PREPARANDO)
-   • Agrupa linhas compatíveis (mesma temperatura)
-   • Respeita requisitos de isolamento
+4. TAB: "Paletização Expedição" — Auto-agrupamento por temperatura
+   • Operador seleciona Guia
+   • Sistema agrupa linhas AMBIENTE / FRESCO / CONGELADO automaticamente
+   • Respeita requisitos de isolamento (requer_palote_separada)
    • Calcula peso/volume
    • Gera SSCC (GS1 18-digit)
+   • Etiqueta SSCC gerada (base64 ou SVG)
    ↓
-5. Checklist Pré-Expedição (validação)
+5. Palete materializada (status: PREPARANDO → ETIQUETADA)
+   • Imprime etiqueta A5 (105x148mm)
+   • Operador coloca na palete
+   ↓
+6. Checklist Pré-Expedição (validação)
    • Etiqueta SSCC visível ✓
    • Peso/altura conforme limites ✓
    • Documentação acompanhando ✓
    • Temperatura verificada ✓
    ↓
-6. Comprovante de Embarque (status: PRONTA_EMBARQUE → EXPEDIDA)
-   • Palete sai do armazém
-   • Registado transportador, motorista, hora
+7. Comprovante de Embarque (status: PRONTA_EMBARQUE → EXPEDIDA)
+   • Palete sai do armazém Imefar (veículo próprio)
+   • Registado: motorista, placa, temperatura veiculo, hora saída
    • Guia → status EXPEDIDA
    ↓
-7. Transporte & Entrega (status: EM_TRANSITO → ENTREGUE)
-   • DHL/transportador em rota para cliente
-   • Cliente (Sonae) recebe
+8. Transporte (status: EM_TRANSITO → ENTREGUE)
+   • Veículo Imefar em rota para cliente
+   • GPS/rastreio (opcional)
    ↓
-8. Receção Cliente (módulo Receção Sonae)
-   • Verifica SSCC contra Guia
+9. Receção Cliente (módulo Receção Sonae)
+   • Escaneia SSCC contra Guia
    • Conta caixas/produtos
-   • Aceita ou rejeitação
+   • Aceita ou rejeita
 ```
 
 ## Tipos & Schema
@@ -192,6 +196,70 @@ ComprovanteEmbarque:
   - REGISTAR_EMBARQUE
   - Log inclui operador, IP terminal, timestamp
 
+## Aba: Paletização Expedição
+
+**Localização:** Navbar > "Paletização Expedição" (badge "Auto")
+
+**Funcionalidade:**
+1. Seleciona Guia de Transporte de entrada (de Expedição tab)
+2. Auto-agrupa linhas por temperatura:
+   - AMBIENTE (óleo, azeite, etc)
+   - FRESCO (+2 a +6°C — leite, manteiga, congelados -18°C isolados)
+   - CONGELADO (isolado)
+3. Respeita `requer_palote_separada: true` (isolamento forçado)
+4. Calcula peso total + volume
+5. Gera SSCC GS1-18 automático (36000100001000000001)
+6. Cria Palete com status "PREPARANDO"
+7. Preview etiqueta SSCC (SVG ou base64)
+8. Botão "Criar Palete + SSCC"
+9. Atualiza status Guia → "PALETIZADA"
+10. Log auditoria: CRIAR_PALETE_EXPEDICAO_AUTO
+
+**Exemplo:**
+```
+Guia GT-2026-0051 (Sonae MC):
+  L001: 240x Nívea Creme (AMBIENTE)
+  L002: 120x Tesa Fita (AMBIENTE)
+  L003: 60x Tena Pants (AMBIENTE)
+
+→ Palete única (mesma temperatura):
+    SSCC: 36000100001000000001
+    Peso: 175kg
+    Status: PREPARANDO (operador coloca etiqueta)
+```
+
+```
+Guia GT-2026-0052 (Lactogal):
+  L004: 500x Nespresso (FRESCO)
+
+→ Palete única:
+    SSCC: 36000100001000000002
+    Peso: 25kg
+    Temperatura: FRESCO (transportar +4°C)
+    Status: PREPARANDO
+```
+
+## Impressão Etiqueta SSCC
+
+- **Formato:** A5 (105 × 148mm) ou A6 (100 × 150mm)
+- **Conteúdo:** 
+  - GS1-128 barcode (SSCC 18-digit)
+  - Guia número
+  - Cliente nome
+  - Produtos resumo
+  - Temperatura zona
+  - Peso + dimensões
+  - Data paletização
+- **Suporte:** Modal de impressão (navegador / USB printer)
+
+## Transportador Imefar
+
+Por padrão, embarque registado como:
+- **Transportador:** "Imefar - Veículo Próprio"
+- **Temperatura veiculo:** Configurável (AMBIENTE: 22°C, FRESCO: +4°C, CONGELADO: -18°C)
+- **Operador:** Op. Expedição + terminal IP
+- **Rastreio:** (Opcional) GPS real-time, webhook status
+
 ## Próximas Features
 
 1. **Integração ARTSOFT real**
@@ -244,8 +312,9 @@ RPC:
 
 - **Armazenista:** Imefar (RAM)
 - **Clientes:** Sonae MC (Maia), Lactogal (Barreiro), Nívea, Tesa, Tena
-- **Transportadores:** DHL, GLS, CTT
+- **Transportadores:** Imefar (veículos próprios) + opcional DHL, GLS, CTT
 - **Temperaturas:** AMBIENTE (22°C), FRESCO (2-6°C), CONGELADO (-18°C)
+- **Novo Fluxo Paletização:** Aba "Paletização Expedição" auto-agrupa por temperatura + gera SSCC + imprime etiqueta
 
 ---
 
