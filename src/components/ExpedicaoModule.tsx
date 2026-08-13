@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PedidoCompra, GuiaTransporte, PaletaExpedicao } from '../types/expedicao';
+import { GuiaTransporte, PaletaExpedicao, ComprovanteEmbarque } from '../types/expedicao';
 import {
   Package,
   Truck,
@@ -9,284 +9,310 @@ import {
   MapPin,
   Clock,
   Thermometer,
-  Plus,
-  FileDown,
-  Send
+  Send,
+  Barcode,
+  Info
 } from 'lucide-react';
 
 interface ExpedicaoModuleProps {
-  pedidos: PedidoCompra[];
+  guias: GuiaTransporte[];
   paletas: PaletaExpedicao[];
-  onCreateGuia: (guia: GuiaTransporte) => void;
-  onUpdatePedido: (pedido: PedidoCompra) => void;
+  comprovantes: ComprovanteEmbarque[];
+  onConfirmGuia: (guiaId: string) => void;
+  onCreateEmbarque: (comprovante: ComprovanteEmbarque) => void;
 }
 
 export const ExpedicaoModule: React.FC<ExpedicaoModuleProps> = ({
-  pedidos,
+  guias,
   paletas,
-  onCreateGuia,
-  onUpdatePedido
+  comprovantes,
+  onConfirmGuia,
+  onCreateEmbarque
 }) => {
-  const [selectedPedidoId, setSelectedPedidoId] = useState<string>(pedidos[0]?.id || '');
-  const [showGuiaForm, setShowGuiaForm] = useState(false);
+  const [selectedGuiaId, setSelectedGuiaId] = useState<string>(guias[0]?.id || '');
+  const [showEmbarqueForm, setShowEmbarqueForm] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('TODOS');
 
-  const selectedPedido = pedidos.find(p => p.id === selectedPedidoId) || pedidos[0];
-  const pedidoPaletas = selectedPedido ? paletas.filter(p => p.pedido_id === selectedPedido.id) : [];
-  const pesoTotal = pedidoPaletas.reduce((sum, p) => sum + p.peso_bruto_kg, 0);
+  const selectedGuia = guias.find(g => g.id === selectedGuiaId) || guias[0];
+  const guiaPaletas = selectedGuia ? paletas.filter(p => p.guia_id === selectedGuia.id) : [];
 
-  const handleCreateGuia = () => {
-    if (!selectedPedido || pedidoPaletas.length === 0) {
-      alert('Seleciona pedido com paletas preparadas');
+  const filteredGuias = statusFilter === 'TODOS' ? guias : guias.filter(g => g.status === statusFilter);
+
+  const handleConfirmarPaletizacao = () => {
+    if (!selectedGuia || guiaPaletas.length === 0) {
+      alert('Seleciona guia com paletas preparadas');
+      return;
+    }
+    onConfirmGuia(selectedGuia.id);
+  };
+
+  const handleEmbarque = () => {
+    if (!selectedGuia || guiaPaletas.length === 0) {
+      alert('Nenhuma palete preparada para embarque');
       return;
     }
 
-    const guia: GuiaTransporte = {
-      id: `GT-${Date.now()}`,
-      numero_guia: `GT-${selectedPedido.numero}-${new Date().toISOString().slice(0, 10)}`,
-      data_emissao: new Date().toISOString().slice(0, 10),
-      pedido_compra_id: selectedPedido.id,
-      paletes_sscc: pedidoPaletas.map(p => p.sscc),
-      peso_total_kg: pesoTotal,
-      volume_m3: (pesoTotal / 1000) * 1.2, // estimativa simplista
-      transportador_nome: 'DHL (provisório)',
-      transportador_veiculo: 'MB Sprinter Frigorífico',
+    const comprovante: ComprovanteEmbarque = {
+      id: `EMB-${Date.now()}`,
+      guia_id: selectedGuia.id,
+      paletes_sscc: guiaPaletas.map(p => p.sscc),
+      peso_real_kg: guiaPaletas.reduce((sum, p) => sum + p.peso_total_kg, 0),
+      volume_real_m3: guiaPaletas.reduce((sum, p) => sum + p.volume_total_m3, 0),
+      transportador_nome: 'DHL Logistics Portugal',
+      matricula_veiculo: 'XX-11-AA',
       motorista_nome: 'João Silva',
-      data_saida_prevista: new Date(Date.now() + 24 * 3600 * 1000).toISOString().slice(0, 10),
-      observacoes: `Pedido ${selectedPedido.numero} - Imefar para Sonae`,
-      status: 'PRONTA_EMBARQUE'
+      contacto_motorista: '+351 91 234 5678',
+      temperatura_veiculo_c: selectedGuia.linhas[0]?.temperatura_armazenamento === 'FRESCO' ? 4 : 22,
+      hora_saida: new Date().toLocaleTimeString('pt-PT'),
+      data_saida: new Date().toISOString().slice(0, 10),
+      operador_embarque: 'Op. Expedição #60',
+      observacoes: `Guia ${selectedGuia.numero_guia} - Cliente: ${selectedGuia.cliente_nome}`,
+      status: 'EMBARQUE_CONFIRMADO'
     };
 
-    onCreateGuia(guia);
-    setShowGuiaForm(false);
+    onCreateEmbarque(comprovante);
+    setShowEmbarqueForm(false);
   };
-
-  const filteredPedidos = statusFilter === 'TODOS'
-    ? pedidos
-    : pedidos.filter(p => p.status === statusFilter);
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-blue-100 rounded-lg">
-            <Truck className="w-6 h-6 text-blue-600" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900">Expedição</h2>
-            <p className="text-sm text-slate-600">Encomendas Sonae MC → Imefar (ARTSOFT)</p>
-          </div>
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-lg">
+        <div className="flex items-center gap-3 mb-2">
+          <Truck className="w-6 h-6" />
+          <h1 className="text-2xl font-bold">Expedição — Imefar → Clientes</h1>
         </div>
-        <button
-          onClick={() => setShowGuiaForm(!showGuiaForm)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          <Plus className="w-4 h-4" />
-          Gerar Guia Transporte
-        </button>
+        <p className="text-blue-100">Paletização + Embarque para Sonae MC, Nívea, Tesa, Tena, etc</p>
       </div>
 
-      {/* Status Filter */}
-      <div className="flex gap-2">
-        {['TODOS', 'PENDENTE', 'CONFIRMADO', 'PREPARANDO', 'PRONTO', 'EXPEDIDO'].map(status => (
-          <button
-            key={status}
-            onClick={() => setStatusFilter(status)}
-            className={`px-3 py-1 rounded-full text-sm font-medium transition ${
-              statusFilter === status
-                ? 'bg-blue-600 text-white'
-                : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-            }`}
-          >
-            {status}
-          </button>
-        ))}
-      </div>
+      {/* Main 3-Column Layout */}
+      <div className="grid grid-cols-3 gap-4">
+        {/* Column 1: Guias List */}
+        <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+          <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+            <h2 className="font-semibold text-sm text-slate-900 flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              Guias de Transporte
+            </h2>
+            <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-mono font-bold">
+              {filteredGuias.length}
+            </span>
+          </div>
 
-      {/* Pedidos List */}
-      <div className="grid lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-            <div className="p-4 border-b border-slate-200 bg-slate-50 font-semibold text-slate-700">
-              Pedidos Compra ({filteredPedidos.length})
-            </div>
-            <div className="divide-y divide-slate-200 max-h-96 overflow-y-auto">
-              {filteredPedidos.map(pedido => (
-                <button
-                  key={pedido.id}
-                  onClick={() => setSelectedPedidoId(pedido.id)}
-                  className={`w-full text-left p-4 hover:bg-blue-50 transition border-l-4 ${
-                    selectedPedido?.id === pedido.id ? 'border-blue-600 bg-blue-50' : 'border-transparent'
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="font-semibold text-slate-900">{pedido.numero}</div>
-                      <div className="text-sm text-slate-600">{pedido.cliente_nome} → {pedido.fornecedor_nome}</div>
-                      <div className="text-xs text-slate-500 mt-1">{pedido.linhas.length} linhas • {pedido.data_pedido}</div>
-                    </div>
-                    <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                      pedido.status === 'EXPEDIDO' ? 'bg-green-100 text-green-700' :
-                      pedido.status === 'PRONTO' ? 'bg-blue-100 text-blue-700' :
-                      pedido.status === 'PREPARANDO' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-gray-100 text-gray-700'
-                    }`}>
-                      {pedido.status}
-                    </span>
-                  </div>
-                </button>
-              ))}
-            </div>
+          {/* Status Filter */}
+          <div className="px-4 py-2 border-b border-slate-100 bg-white">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full text-xs px-2 py-1 border border-slate-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="TODOS">Todos status</option>
+              <option value="RECEBIDA">Recebida</option>
+              <option value="PREPARANDO">Preparando</option>
+              <option value="PALETIZADA">Paletizada</option>
+              <option value="PRONTA_EMBARQUE">Pronta embarque</option>
+              <option value="EXPEDIDA">Expedida</option>
+            </select>
+          </div>
+
+          {/* Guias Scroll */}
+          <div className="flex-1 overflow-y-auto">
+            {filteredGuias.map((guia) => (
+              <button
+                key={guia.id}
+                onClick={() => setSelectedGuiaId(guia.id)}
+                className={`w-full text-left px-4 py-3 border-b border-slate-100 hover:bg-blue-50 transition-all ${
+                  selectedGuiaId === guia.id ? 'bg-blue-50 border-l-4 border-l-blue-600' : ''
+                }`}
+              >
+                <div className="flex items-start justify-between mb-1">
+                  <span className="font-mono font-bold text-xs text-slate-900">{guia.numero_guia}</span>
+                  <span
+                    className={`px-1.5 py-0.5 text-[10px] font-bold rounded-full ${
+                      guia.status === 'RECEBIDA'
+                        ? 'bg-amber-100 text-amber-700'
+                        : guia.status === 'PRONTA_EMBARQUE'
+                          ? 'bg-green-100 text-green-700'
+                          : guia.status === 'EXPEDIDA'
+                            ? 'bg-blue-100 text-blue-700'
+                            : 'bg-slate-100 text-slate-600'
+                    }`}
+                  >
+                    {guia.status.replace(/_/g, ' ')}
+                  </span>
+                </div>
+                <div className="text-xs text-slate-600 truncate">{guia.cliente_nome}</div>
+                <div className="text-xs text-slate-500 mt-1">
+                  {guia.linhas.reduce((sum, l) => sum + l.quantidade_solicitada, 0)} unidades
+                </div>
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Pedido Details */}
-        {selectedPedido && (
-          <div className="bg-white rounded-lg border border-slate-200 p-4 space-y-4">
+        {/* Column 2: Guia Details */}
+        {selectedGuia && (
+          <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4 space-y-4">
             <div>
-              <h3 className="font-semibold text-slate-900 mb-3">Pedido {selectedPedido.numero}</h3>
-
+              <h3 className="font-semibold text-sm text-slate-900 mb-3">Detalhes da Guia</h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-slate-600">Cliente:</span>
-                  <span className="font-medium">{selectedPedido.cliente_nome}</span>
+                  <span className="text-slate-600">Guia:</span>
+                  <span className="font-mono font-bold text-slate-900">{selectedGuia.numero_guia}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-600">Fornecedor:</span>
-                  <span className="font-medium">{selectedPedido.fornecedor_nome}</span>
+                  <span className="text-slate-600">Cliente:</span>
+                  <span className="font-bold text-slate-900">{selectedGuia.cliente_nome}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-600">Entrega:</span>
-                  <span className="font-medium">{selectedPedido.data_entrega_prevista}</span>
+                  <span className="text-slate-900">{selectedGuia.data_entrega_prevista}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-600">ARTSOFT ID:</span>
-                  <span className="font-mono text-xs">{selectedPedido.artsoft_order_id}</span>
+                  <span className="text-slate-600">NIF:</span>
+                  <span className="font-mono text-slate-900">{selectedGuia.cliente_nif}</span>
+                </div>
+                <div className="pt-2 border-t border-slate-200">
+                  <span className="text-slate-600 block mb-1">Morada:</span>
+                  <span className="text-xs text-slate-900 leading-tight">
+                    {selectedGuia.morada_entrega}, {selectedGuia.codigo_postal_entrega} {selectedGuia.cidade_entrega}
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Paletas Info */}
+            {/* Linhas da Guia */}
             <div className="border-t border-slate-200 pt-4">
-              <h4 className="font-semibold text-slate-900 mb-2 flex items-center gap-2">
-                <Package className="w-4 h-4" />
-                Paletas ({pedidoPaletas.length})
+              <h4 className="font-semibold text-xs text-slate-900 mb-2 flex items-center gap-2">
+                <Package className="w-3.5 h-3.5" />
+                Produtos ({selectedGuia.linhas.length})
               </h4>
-              <div className="space-y-2">
-                {pedidoPaletas.map(p => (
-                  <div key={p.id} className="text-xs bg-slate-50 p-2 rounded">
-                    <div className="font-mono font-semibold">{p.sscc}</div>
-                    <div className="text-slate-600">{p.peso_bruto_kg}kg • {p.altura_cm}cm altura</div>
-                    <div className="text-slate-500 flex items-center gap-1 mt-1">
-                      <Thermometer className="w-3 h-3" />
-                      {p.temperatura_requerida}
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {selectedGuia.linhas.map((linha) => (
+                  <div
+                    key={linha.id}
+                    className="bg-slate-50 p-2 rounded text-xs border border-slate-200"
+                  >
+                    <div className="font-mono font-bold text-slate-900">{linha.artigo_codigo}</div>
+                    <div className="text-slate-600 truncate">{linha.artigo_descricao}</div>
+                    <div className="flex justify-between mt-1 text-slate-500">
+                      <span>{linha.quantidade_solicitada} un</span>
+                      <span className="flex items-center gap-1">
+                        <Thermometer className="w-3 h-3" />
+                        {linha.temperatura_armazenamento}
+                      </span>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Total */}
-            <div className="border-t border-slate-200 pt-4 bg-blue-50 p-3 rounded">
-              <div className="flex justify-between font-semibold text-slate-900">
-                <span>Peso Total:</span>
-                <span>{pesoTotal}kg</span>
+            {/* Action Button */}
+            {selectedGuia.status !== 'PRONTA_EMBARQUE' && selectedGuia.status !== 'EXPEDIDA' && (
+              <button
+                onClick={handleConfirmarPaletizacao}
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 rounded-lg text-sm transition-all flex items-center justify-center gap-2"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                Confirmar Paletização
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Column 3: Paletas + Embarque */}
+        {selectedGuia && (
+          <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4 space-y-4 flex flex-col">
+            <div>
+              <h3 className="font-semibold text-sm text-slate-900 mb-3 flex items-center gap-2">
+                <Barcode className="w-4 h-4" />
+                Paletas ({guiaPaletas.length})
+              </h3>
+              <div className="space-y-2 max-h-32 overflow-y-auto">
+                {guiaPaletas.map((palete) => (
+                  <div key={palete.id} className="bg-slate-50 p-2 rounded border border-slate-200 text-xs">
+                    <div className="font-mono font-bold text-slate-900">{palete.sscc}</div>
+                    <div className="flex justify-between mt-1 text-slate-500 text-[11px]">
+                      <span>{palete.peso_total_kg}kg</span>
+                      <span className="flex items-center gap-1">
+                        <Thermometer className="w-3 h-3" />
+                        {palete.temperatura_zona}
+                      </span>
+                    </div>
+                    <div className="mt-1 text-slate-600">
+                      {palete.produtos.length} produto(s)
+                    </div>
+                    <div className={`mt-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                      palete.status === 'ETIQUETADA'
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-amber-100 text-amber-700'
+                    }`}>
+                      {palete.status}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
+
+            {/* Embarque Form */}
+            {selectedGuia.status === 'PRONTA_EMBARQUE' && (
+              <div className="border-t border-slate-200 pt-4 space-y-3">
+                <h4 className="font-semibold text-xs text-slate-900 flex items-center gap-2">
+                  <Truck className="w-3.5 h-3.5" />
+                  Confirmar Embarque
+                </h4>
+                <button
+                  onClick={handleEmbarque}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-lg text-sm transition-all flex items-center justify-center gap-2"
+                >
+                  <Send className="w-4 h-4" />
+                  Registar Saída
+                </button>
+              </div>
+            )}
+
+            {/* Status expedida */}
+            {selectedGuia.status === 'EXPEDIDA' && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-xs">
+                    <div className="font-bold text-green-900">Guia Expedida</div>
+                    <div className="text-green-700 text-[11px] mt-1">
+                      {comprovantes.find(c => c.guia_id === selectedGuia.id)?.transportador_nome}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      {/* Guia Transporte Form */}
-      {showGuiaForm && selectedPedido && pedidoPaletas.length > 0 && (
-        <div className="bg-green-50 border border-green-300 rounded-lg p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <FileText className="w-5 h-5 text-green-600" />
-            <h3 className="font-semibold text-green-900">Nova Guia de Transporte</h3>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Transportador</label>
-              <input
-                type="text"
-                defaultValue="DHL"
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-                placeholder="Nome transportador"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Veículo</label>
-              <input
-                type="text"
-                defaultValue="MB Sprinter Frigorífico"
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-                placeholder="Identificação veículo"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Motorista</label>
-              <input
-                type="text"
-                defaultValue="João Silva"
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-                placeholder="Nome motorista"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Data Saída</label>
-              <input
-                type="date"
-                defaultValue={new Date(Date.now() + 24 * 3600 * 1000).toISOString().slice(0, 10)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-              />
-            </div>
-          </div>
-
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-slate-700 mb-1">Observações</label>
-            <textarea
-              defaultValue={`Pedido ${selectedPedido.numero} - Imefar para Sonae`}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-              rows={2}
-            />
-          </div>
-
-          <div className="flex gap-3">
-            <button
-              onClick={handleCreateGuia}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold"
-            >
-              <Send className="w-4 h-4" />
-              Gerar e Expedir
-            </button>
-            <button
-              onClick={() => setShowGuiaForm(false)}
-              className="px-4 py-2 bg-slate-300 text-slate-700 rounded-lg hover:bg-slate-400"
-            >
-              Cancelar
-            </button>
-          </div>
-
-          {/* Checklist */}
-          <div className="mt-6 border-t border-green-300 pt-4">
-            <h4 className="font-semibold text-slate-900 mb-3">Checklist Pré-Expedição</h4>
-            <div className="space-y-2">
-              {[
-                'Todas linhas preparadas e paletizadas',
-                'Paletas com SSCC válidos',
-                'Documentação completa (ARTSOFT)',
-                'Temperatura de transporte confirmada',
-                'Veículo frigorífico disponível',
-                'Peso/volume dentro limites'
-              ].map(item => (
-                <label key={item} className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" className="w-4 h-4 rounded" defaultChecked />
-                  <span className="text-sm text-slate-700">{item}</span>
-                </label>
-              ))}
-            </div>
+      {/* Recent Embarques */}
+      {comprovantes.length > 0 && (
+        <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4">
+          <h3 className="font-semibold text-sm text-slate-900 mb-3 flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-green-600" />
+            Últimas Saídas
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {comprovantes.slice(0, 4).map((comp) => {
+              const guia = guias.find(g => g.id === comp.guia_id);
+              return (
+                <div key={comp.id} className="bg-slate-50 p-3 rounded border border-slate-200 text-xs">
+                  <div className="flex justify-between mb-2">
+                    <span className="font-mono font-bold text-slate-900">{guia?.numero_guia}</span>
+                    <span className="text-green-600 font-bold">{comp.status.replace(/_/g, ' ')}</span>
+                  </div>
+                  <div className="text-slate-600">{guia?.cliente_nome}</div>
+                  <div className="mt-1 text-slate-500">{comp.transportador_nome}</div>
+                  <div className="mt-1 text-[11px] text-slate-500">
+                    {comp.data_saida} às {comp.hora_saida}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

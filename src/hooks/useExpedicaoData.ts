@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { PedidoCompra, PaletaExpedicao, GuiaTransporte } from '../types/expedicao';
-import { INITIAL_PEDIDOS_COMPRA, INITIAL_PALETAS_EXPEDICAO, INITIAL_GUIAS_TRANSPORTE } from '../data/mockExpedicao';
+import { GuiaTransporte, PaletaExpedicao, ComprovanteEmbarque } from '../types/expedicao';
+import { INITIAL_GUIAS_TRANSPORTE, INITIAL_PALETAS_EXPEDICAO, INITIAL_COMPROVANTES_EMBARQUE } from '../data/mockExpedicao';
 
 export function useExpedicaoData() {
-  const [pedidos, setPedidos] = useState<PedidoCompra[]>(INITIAL_PEDIDOS_COMPRA);
-  const [paletas, setPaletas] = useState<PaletaExpedicao[]>(INITIAL_PALETAS_EXPEDICAO);
   const [guias, setGuias] = useState<GuiaTransporte[]>(INITIAL_GUIAS_TRANSPORTE);
+  const [paletas, setPaletas] = useState<PaletaExpedicao[]>(INITIAL_PALETAS_EXPEDICAO);
+  const [comprovantes, setComprovantes] = useState<ComprovanteEmbarque[]>(INITIAL_COMPROVANTES_EMBARQUE);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -14,11 +14,11 @@ export function useExpedicaoData() {
       try {
         setLoading(true);
 
-        // Tenta buscar dados reais; fallback para mock
+        // Tenta buscar dados reais da API; fallback para mock
         const endpoints = [
-          { url: 'http://localhost:3000/rest/v1/pedido_compra', setState: setPedidos },
+          { url: 'http://localhost:3000/rest/v1/guia_transporte', setState: setGuias },
           { url: 'http://localhost:3000/rest/v1/palete_expedicao', setState: setPaletas },
-          { url: 'http://localhost:3000/rest/v1/guia_transporte', setState: setGuias }
+          { url: 'http://localhost:3000/rest/v1/comprovante_embarque', setState: setComprovantes }
         ];
 
         for (const endpoint of endpoints) {
@@ -26,7 +26,7 @@ export function useExpedicaoData() {
             const res = await fetch(endpoint.url);
             if (res.ok) {
               const data = await res.json();
-              if (data.length > 0) {
+              if (Array.isArray(data) && data.length > 0) {
                 endpoint.setState(data);
               }
             }
@@ -50,5 +50,5 @@ export function useExpedicaoData() {
     return () => clearInterval(interval);
   }, []);
 
-  return { pedidos, paletas, guias, loading, error, setPedidos, setPaletas, setGuias };
+  return { pedidos: guias, paletas, guias: comprovantes, loading, error, setPedidos: setGuias, setPaletas, setGuias: setComprovantes };
 }

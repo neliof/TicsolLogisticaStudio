@@ -17,7 +17,7 @@ import { ExpedicaoModule } from './components/ExpedicaoModule';
 import { BarcodeScannerModal } from './components/BarcodeScannerModal';
 import { useWMSData } from './hooks/useWMSData';
 import { useExpedicaoData } from './hooks/useExpedicaoData';
-import { PedidoCompra, GuiaTransporte, PaletaExpedicao } from './types/expedicao';
+import { GuiaTransporte, PaletaExpedicao, ChecklistExpedicao, ComprovanteEmbarque } from './types/expedicao';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<AppTab>('rececao');
@@ -30,8 +30,8 @@ export default function App() {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(INITIAL_AUDIT_LOGS);
   const [locations] = useState(INITIAL_LOCATIONS);
 
-  // Expedição State — Real data from API + fallback mock
-  const { pedidos: pedidosCompra, paletas: paletasExpedicao, guias: guiasTransporte, loading: expedicaoLoading, error: expedicaoError, setPedidos: setPedidosCompra, setPaletas: setPaletasExpedicao, setGuias: setGuiasTransporte } = useExpedicaoData();
+  // Expedição State — Imefar distribui para clientes via Guias de Transporte (ARTSOFT)
+  const { pedidos: guiasEntrada, paletas: paletasExpedicao, guias: comprovantesEmbarque, loading: expedicaoLoading, error: expedicaoError, setPedidos: setGuiasEntrada, setPaletas: setPaletasExpedicao, setGuias: setComprovantesEmbarque } = useExpedicaoData();
 
   // Scanner & Navigation Helpers
   const [isScannerOpen, setIsScannerOpen] = useState<boolean>(false);
@@ -165,31 +165,43 @@ export default function App() {
     );
   };
 
-  // Handler: Create Transport Guide (Expedição)
-  const handleCreateGuia = (guia: GuiaTransporte) => {
-    setGuiasTransporte(prev => [guia, ...prev]);
-    setPedidosCompra(prev =>
-      prev.map(p => (p.id === guia.pedido_compra_id ? { ...p, status: 'EXPEDIDO' } : p))
+  // Handler: Confirm Guia Paletization & ready to ship
+  const handleConfirmGuiaPaletizacao = (guiaId: string) => {
+    setGuiasEntrada(prev =>
+      prev.map(g => (g.id === guiaId ? { ...g, status: 'PRONTA_EMBARQUE' } : g))
     );
     const log: AuditLog = {
       id: `LOG-${Date.now().toString().slice(-4)}`,
       timestamp: new Date().toISOString().replace('T', ' ').slice(0, 19),
       operador: 'Op. Expedição',
       empresa_tenant: selectedTenant,
-      acao: 'GERAR_GUIA_TRANSPORTE',
+      acao: 'CONFIRMAR_PALETIZACAO_GUIA',
       tabela_afetada: 'logistics.guia_transporte',
-      postgrest_rpc: 'fn_gerar_guia_transporte(pedido_id, paletas)',
-      detalhes_json: JSON.stringify({ numero_guia: guia.numero_guia, paletas: guia.paletes_sscc }),
+      postgrest_rpc: 'fn_confirmar_paletizacao(guia_id)',
+      detalhes_json: JSON.stringify({ guia_id: guiaId }),
       ip_terminal: '192.168.1.115 (Terminal Expedição)'
     };
     setAuditLogs(prev => [log, ...prev]);
   };
 
-  // Handler: Update Pedido Status
-  const handleUpdatePedido = (pedido: PedidoCompra) => {
-    setPedidosCompra(prev =>
-      prev.map(p => (p.id === pedido.id ? pedido : p))
+  // Handler: Create Embarque Comprovante
+  const handleCreateEmbarque = (comprovante: ComprovanteEmbarque) => {
+    setComprovantesEmbarque(prev => [comprovante, ...prev]);
+    setGuiasEntrada(prev =>
+      prev.map(g => (g.id === comprovante.guia_id ? { ...g, status: 'EXPEDIDA' } : g))
     );
+    const log: AuditLog = {
+      id: `LOG-${Date.now().toString().slice(-4)}`,
+      timestamp: new Date().toISOString().replace('T', ' ').slice(0, 19),
+      operador: 'Op. Expedição',
+      empresa_tenant: selectedTenant,
+      acao: 'REGISTAR_EMBARQUE_SAIDA',
+      tabela_afetada: 'logistics.comprovante_embarque',
+      postgrest_rpc: 'fn_registar_embarque(guia_id, paletas, transportador)',
+      detalhes_json: JSON.stringify({ numero_guia: comprovante.guia_id, transportador: comprovante.transportador_nome }),
+      ip_terminal: '192.168.1.115 (Terminal Expedição)'
+    };
+    setAuditLogs(prev => [log, ...prev]);
   };
 
   return (
@@ -294,13 +306,14 @@ export default function App() {
           />
         )}
 
-        {/* Tab 4: Expedição */}
+        {/* Tab 4: Expedição (Imefar → Clientes) */}
         {activeTab === 'expedicao' && (
           <ExpedicaoModule
-            pedidos={pedidosCompra}
+            guias={guiasEntrada}
             paletas={paletasExpedicao}
-            onCreateGuia={handleCreateGuia}
-            onUpdatePedido={handleUpdatePedido}
+            comprovantes={comprovantesEmbarque}
+            onConfirmGuia={handleConfirmGuiaPaletizacao}
+            onCreateEmbarque={handleCreateEmbarque}
           />
         )}
 
