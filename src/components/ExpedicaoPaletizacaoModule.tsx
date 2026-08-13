@@ -39,6 +39,10 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
   const [selectedLinhaId, setSelectedLinhaId] = useState<string>(selectedGuia?.linhas[0]?.id || '');
   const activeLinha = selectedGuia?.linhas.find(l => l.id === selectedLinhaId) || selectedGuia?.linhas[0];
 
+  // Packing List mode: multi-produto
+  const [packingMode, setPackingMode] = useState(false);
+  const [selectedLinhasIds, setSelectedLinhasIds] = useState<Set<string>>(new Set([selectedLinhaId]));
+
   // Rule: Sonae MC caderno de encargos
   const activeRule = ruleConfigs.find(r => r.cliente_id === 'SONAE_MC') || ruleConfigs[0];
 
@@ -61,19 +65,48 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
   const excedeQuantidade = caixasNaPaleteProposta > caixasSolicitadas;
 
   const handleMaterializePallet = () => {
-    if (!activeLinha || !selectedGuia) return;
-    if (excedeQuantidade) {
-      alert(`Erro: Palete requer ${caixasNaPaleteProposta} caixas mas guia tem só ${caixasSolicitadas}!`);
+    if (!selectedGuia) return;
+
+    // Packing List: múltiplas linhas
+    const linhasApalete = packingMode
+      ? Array.from(selectedLinhasIds).map(id => selectedGuia.linhas.find(l => l.id === id)).filter(Boolean) as LinhaGuia[]
+      : [activeLinha].filter(Boolean);
+
+    if (linhasApalete.length === 0) {
+      alert('Seleciona pelo menos uma linha!');
+      return;
+    }
+
+    // Validar compatibilidade temperatura (packing list)
+    if (packingMode) {
+      const temps = new Set(linhasApalete.map(l => l.temperatura_armazenamento));
+      if (temps.size > 1) {
+        const hasIsolated = linhasApalete.some(l => l.requer_palote_separada);
+        if (hasIsolated) {
+          alert('Erro: Não pode misturar produtos com isolamento forçado (requer_palote_separada) com outras temperaturas!');
+          return;
+        }
+      }
+    }
+
+    // Calcular totais packing list
+    const totalCaixas = linhasApalete.reduce((sum, l) => sum + l.quantidade_solicitada, 0);
+    const totalPeso = linhasApalete.reduce((sum, l) => sum + l.quantidade_solicitada * l.peso_unitario_kg, 0);
+    const totalVolume = linhasApalete.reduce((sum, l) => sum + l.quantidade_solicitada * l.volume_unitario_m3, 0);
+
+    if (packingMode && caixasNaPaleteProposta > totalCaixas) {
+      alert(`Erro: Palete requer ${caixasNaPaleteProposta} caixas mas packing tem só ${totalCaixas}!`);
       return;
     }
 
     // Gerar SSCC
     const { ssccFull } = generateSSCC(3, '5601234');
-    const validadeGS1 = formatToGS1Date(activeLinha.data_validade || '2027-12-31');
+    const primeiraLinha = linhasApalete[0];
+    const validadeGS1 = formatToGS1Date(primeiraLinha.data_validade || '2027-12-31');
     const gs1128Str = buildGS1128String({
       sscc: ssccFull,
-      gtinEan: activeLinha.ean_barcode,
-      lote: activeLinha.lote || 'LOTE-STD',
+      gtinEan: primeiraLinha.ean_barcode,
+      lote: primeiraLinha.lote || 'LOTE-STD',
       validadeYYMMDD: validadeGS1,
       qtdCaixas: caixasNaPaleteProposta
     });
@@ -82,18 +115,18 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
     const newPallet: PalletSSCC = {
       sscc: ssccFull,
       guia_id: selectedGuia.id,
-      artigo_codigo: activeLinha.artigo_codigo,
-      artigo_descricao: activeLinha.artigo_descricao,
-      ean_barcode: activeLinha.ean_barcode,
-      lote: activeLinha.lote || 'LOTE-PADRAO',
-      data_validade: activeLinha.data_validade || '2027-12-31',
+      artigo_codigo: packingMode ? 'PACKING-LIST' : primeiraLinha.artigo_codigo,
+      artigo_descricao: packingMode ? `Packing List (${linhasApalete.length} produtos)` : primeiraLinha.artigo_descricao,
+      ean_barcode: primeiraLinha.ean_barcode,
+      lote: primeiraLinha.lote || 'LOTE-PADRAO',
+      data_validade: primeiraLinha.data_validade || '2027-12-31',
       caixas_na_palete: caixasNaPaleteProposta,
       unidades_totais: caixasNaPaleteProposta * 10,
       camadas: numCamadas,
       caixas_por_camada: caixasPorCamada,
       altura_total_cm: alturaPaleteCm,
-      peso_liquido_kg: pesoLiquidoKg,
-      peso_bruto_kg: pesoBrutoKg,
+      peso_liquido_kg: totalPeso * 0.9,
+      peso_bruto_kg: totalPeso + 22,
       regrac_cliente_aplicada: 'SONAE_MC',
       empresa_owner: selectedGuia.cliente_nome,
       localizacao_atual: 'EM_STAGING',
@@ -108,16 +141,16 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
       id: `pal-${Date.now()}`,
       sscc: ssccFull,
       guia_id: selectedGuia.id,
-      linhas_guia: [activeLinha.id],
-      produtos: [{
-        artigo_codigo: activeLinha.artigo_codigo,
-        artigo_descricao: activeLinha.artigo_descricao,
-        quantidade: caixasNaPaleteProposta,
-        lote: activeLinha.lote
-      }],
-      temperatura_zona: activeLinha.temperatura_armazenamento,
-      peso_total_kg: pesoBrutoKg,
-      volume_total_m3: caixasNaPaleteProposta * activeLinha.volume_unitario_m3,
+      linhas_guia: linhasApalete.map(l => l.id),
+      produtos: linhasApalete.map(l => ({
+        artigo_codigo: l.artigo_codigo,
+        artigo_descricao: l.artigo_descricao,
+        quantidade: l.quantidade_solicitada,
+        lote: l.lote
+      })),
+      temperatura_zona: primeiraLinha.temperatura_armazenamento,
+      peso_total_kg: totalPeso + 22,
+      volume_total_m3: totalVolume,
       altura_palete_cm: alturaPaleteCm,
       dimensoes_palete_cm: `120x80x${alturaPaleteCm}`,
       status: 'PREPARANDO',
@@ -125,9 +158,9 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
       operador_criacao: 'Op. Paletização Expedição'
     };
 
-    onPalletCreated(paletaExpedicao, selectedGuia.id, activeLinha.id, caixasNaPaleteProposta);
+    onPalletCreated(paletaExpedicao, selectedGuia.id, primeiraLinha.id, caixasNaPaleteProposta);
 
-    setToastMsg(`Palete SSCC ${ssccFull} criada e materializada! (Expedição)`);
+    setToastMsg(`Palete SSCC ${ssccFull} criada! (${packingMode ? 'Packing List' : 'Mono-produto'})`);
     setTimeout(() => setToastMsg(null), 4000);
     setActivePrintPallet(newPallet);
   };
@@ -136,7 +169,7 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
     <div className="space-y-6">
       {/* Toast */}
       {toastMsg && (
-        <div className="fixed bottom-6 right-6 z-50 bg-amber-500 text-slate-950 font-bold px-4 py-3 rounded-lg shadow-xl flex items-center gap-2 animate-bounce border border-amber-400">
+        <div className="fixed bottom-6 right-6 z-50 bg-gradient-to-r from-purple-500 to-purple-600 text-white font-bold px-4 py-3 rounded-lg shadow-xl flex items-center gap-2 animate-bounce border border-purple-400">
           <CheckCircle2 className="w-5 h-5" />
           <span>{toastMsg}</span>
         </div>
@@ -191,13 +224,45 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
               </select>
             </div>
 
-            {/* Seleção Linha */}
-            {selectedGuia && (
+            {/* Modo: Single-produto vs Packing List */}
+            {selectedGuia && selectedGuia.linhas.length > 1 && (
+              <div>
+                <label className="text-slate-700 block mb-2 font-medium text-sm">Modo Paletização</label>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setPackingMode(false)}
+                    className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm transition-all ${
+                      !packingMode
+                        ? 'bg-purple-600 text-white border-2 border-purple-700'
+                        : 'bg-slate-100 text-slate-700 border-2 border-transparent hover:bg-slate-200'
+                    }`}
+                  >
+                    Mono-Produto
+                  </button>
+                  <button
+                    onClick={() => setPackingMode(true)}
+                    className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm transition-all ${
+                      packingMode
+                        ? 'bg-purple-600 text-white border-2 border-purple-700'
+                        : 'bg-slate-100 text-slate-700 border-2 border-transparent hover:bg-slate-200'
+                    }`}
+                  >
+                    Packing List (Multi)
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Seleção Linha(s) */}
+            {selectedGuia && !packingMode && (
               <div>
                 <label className="text-slate-700 block mb-2 font-medium text-sm">Linha de Produto</label>
                 <select
                   value={selectedLinhaId}
-                  onChange={(e) => setSelectedLinhaId(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedLinhaId(e.target.value);
+                    setSelectedLinhasIds(new Set([e.target.value]));
+                  }}
                   className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 font-mono text-purple-700 font-bold focus:outline-none focus:border-purple-500"
                 >
                   {selectedGuia.linhas.map(l => (
@@ -206,6 +271,42 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
                     </option>
                   ))}
                 </select>
+              </div>
+            )}
+
+            {/* Packing List: Multi-selection */}
+            {selectedGuia && packingMode && (
+              <div>
+                <label className="text-slate-700 block mb-2 font-medium text-sm">Selecionar Produtos (Ctrl+Click)</label>
+                <div className="space-y-2 max-h-48 overflow-y-auto bg-slate-50 p-3 rounded-lg border border-slate-300">
+                  {selectedGuia.linhas.map(l => (
+                    <label key={l.id} className="flex items-center gap-2 cursor-pointer hover:bg-white p-2 rounded">
+                      <input
+                        type="checkbox"
+                        checked={selectedLinhasIds.has(l.id)}
+                        onChange={(e) => {
+                          const newIds = new Set(selectedLinhasIds);
+                          if (e.target.checked) {
+                            newIds.add(l.id);
+                          } else {
+                            newIds.delete(l.id);
+                          }
+                          setSelectedLinhasIds(newIds);
+                        }}
+                        className="w-4 h-4 cursor-pointer"
+                      />
+                      <span className="text-xs font-mono text-purple-700">
+                        {l.artigo_codigo} ({l.quantidade_solicitada} un, {l.temperatura_armazenamento})
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                <div className="mt-2 text-xs text-slate-600 bg-blue-50 p-2 rounded border border-blue-200">
+                  ✓ Selecionadas: {selectedLinhasIds.size} | Total: {Array.from(selectedLinhasIds).reduce((sum, id) => {
+                    const l = selectedGuia.linhas.find(x => x.id === id);
+                    return sum + (l?.quantidade_solicitada || 0);
+                  }, 0)} unidades
+                </div>
               </div>
             )}
 
@@ -334,8 +435,8 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
             </h3>
 
             {/* Stack Visual */}
-            <div className="flex flex-col gap-1 bg-amber-50 p-3 rounded-lg border border-amber-200 font-mono text-xs">
-              <div className="h-5 bg-amber-900/80 border border-amber-700/60 rounded flex items-center justify-around px-2 text-[9px] font-mono text-amber-300 font-bold shadow-md">
+            <div className="flex flex-col gap-1 bg-gradient-to-b from-purple-50 to-purple-100 p-3 rounded-lg border border-purple-300 font-mono text-xs">
+              <div className="h-5 bg-gradient-to-r from-purple-700 to-purple-900 border border-purple-600 rounded flex items-center justify-around px-2 text-[9px] font-mono text-purple-200 font-bold shadow-md">
                 <span>|||</span>
                 <span>EURO PALLET 120x80</span>
                 <span>|||</span>
@@ -344,7 +445,7 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
               {Array.from({ length: numCamadas }).map((_, layerIdx) => (
                 <div
                   key={layerIdx}
-                  className="h-7 bg-amber-500/20 border border-amber-500/40 rounded flex items-center justify-center text-xs font-mono font-bold text-amber-300 transition-all hover:bg-amber-500/30"
+                  className="h-7 bg-gradient-to-r from-purple-400/30 to-purple-500/30 border border-purple-500/50 rounded flex items-center justify-center text-xs font-mono font-bold text-purple-700 transition-all hover:from-purple-400/50 hover:to-purple-500/50 shadow-sm"
                 >
                   Camada {layerIdx + 1}: {caixasPorCamada} caixas
                 </div>
