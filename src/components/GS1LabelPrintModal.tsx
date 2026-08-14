@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { PalletSSCC } from '../types/wms';
 import { BarcodeRenderer } from './BarcodeRenderer';
 import { X, Printer, CheckCircle2, ShieldCheck, Tag } from 'lucide-react';
@@ -10,6 +10,8 @@ interface GS1LabelPrintModalProps {
 }
 
 export const GS1LabelPrintModal: React.FC<GS1LabelPrintModalProps> = ({ pallet, onClose, packingListProducts }) => {
+  const [singleLabel, setSingleLabel] = useState(true);
+
   if (!pallet) return null;
 
   const handlePrint = () => {
@@ -49,115 +51,216 @@ export const GS1LabelPrintModal: React.FC<GS1LabelPrintModalProps> = ({ pallet, 
             className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg shadow-sm transition-all text-sm cursor-pointer"
           >
             <Printer className="w-4 h-4 text-amber-400" />
-            Imprimir Etiqueta
+            Imprimir Etiqueta{!singleLabel && packingListProducts ? `s (${packingListProducts.length})` : ''}
           </button>
         </div>
 
-        {/* Physical GS1 Label Container (Renders exact label dimensions) */}
-        <div className="bg-white text-black p-5 rounded-lg border-2 border-black max-w-md mx-auto font-sans shadow-lg select-text text-left">
-          {/* Section 1: Header Logistics */}
-          <div className="border-b-2 border-black pb-2 mb-2">
-            <div className="flex justify-between items-start text-[10px] font-bold tracking-tight">
-              <div>
-                <p className="uppercase text-[9px] text-gray-600">REMETENTE / EXPEDIDOR</p>
-                <p className="font-extrabold text-[11px] text-slate-900">TicSol Logistics Hub B2B</p>
-                <p>Armazém Central Lisboa - Cais 02</p>
-                <p>NIF: 509876543</p>
-              </div>
-              <div className="text-right">
-                <p className="uppercase text-[9px] text-gray-600">DESTINATÁRIO</p>
-                <p className="font-extrabold text-[11px] text-slate-900">{pallet.empresa_owner}</p>
-                <p>Plataforma Logística Azambuja</p>
-                <p>Cód. Cliente: {pallet.regrac_cliente_aplicada}</p>
-              </div>
+        {/* Modo Impressão - Único vs Individual */}
+        {packingListProducts && packingListProducts.length > 1 && (
+          <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <label className="text-sm font-semibold text-slate-700 block mb-2">Modo Impressão:</label>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setSingleLabel(true)}
+                className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm transition-all ${
+                  singleLabel
+                    ? 'bg-blue-600 text-white border-2 border-blue-700'
+                    : 'bg-white text-slate-700 border-2 border-slate-300 hover:bg-slate-100'
+                }`}
+              >
+                Única (Packing List)
+              </button>
+              <button
+                onClick={() => setSingleLabel(false)}
+                className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm transition-all ${
+                  !singleLabel
+                    ? 'bg-blue-600 text-white border-2 border-blue-700'
+                    : 'bg-white text-slate-700 border-2 border-slate-300 hover:bg-slate-100'
+                }`}
+              >
+                Individuais ({packingListProducts.length} etiquetas)
+              </button>
             </div>
           </div>
+        )}
 
-          {/* Section 2: Article & Batch Metadata */}
-          <div className="border-b-2 border-black pb-2 mb-2 text-[11px]">
-            <div className="mb-2">
-              <span className="text-[9px] font-bold text-gray-600 block uppercase">
-                {packingListProducts ? 'PACKING LIST (MÚLTIPLOS PRODUTOS)' : 'DESCRIÇÃO DO PRODUTO'}
-              </span>
-              {packingListProducts ? (
-                <div className="space-y-1 mt-1">
-                  {packingListProducts.map((prod, idx) => (
-                    <div key={idx} className="text-[9px] border-t border-gray-300 pt-1">
-                      <span className="font-bold text-black">{prod.artigo_descricao}</span>
-                      <div className="flex justify-between font-mono">
-                        <span>Cód: {prod.artigo_codigo}</span>
-                        <span className="font-bold text-amber-800">{prod.quantidade} un</span>
-                      </div>
-                      <div className="text-[8px] text-gray-600 mt-0.5">Lote: {prod.lote} | Val: {prod.data_validade}</div>
-                      <div className="mt-0.5 text-center">
-                        <BarcodeRenderer
-                          value={`(01)${prod.ean_barcode}(10)${prod.lote}(15)${prod.data_validade.replace(/-/g, '').slice(2)}(37)${prod.quantidade}`}
-                          height={24}
-                        />
-                      </div>
-                    </div>
-                  ))}
+        {/* Physical GS1 Label Container - Modo Único ou Individual */}
+        {singleLabel || !packingListProducts ? (
+          // Etiqueta única (packing list ou mono-produto)
+          <div className="bg-white text-black p-5 rounded-lg border-2 border-black max-w-md mx-auto font-sans shadow-lg select-text text-left">
+            {/* Section 1: Header Logistics */}
+            <div className="border-b-2 border-black pb-2 mb-2">
+              <div className="flex justify-between items-start text-[10px] font-bold tracking-tight">
+                <div>
+                  <p className="uppercase text-[9px] text-gray-600">REMETENTE / EXPEDIDOR</p>
+                  <p className="font-extrabold text-[11px] text-slate-900">TicSol Logistics Hub B2B</p>
+                  <p>Armazém Central Lisboa - Cais 02</p>
+                  <p>NIF: 509876543</p>
                 </div>
-              ) : (
-                <>
-                  <span className="font-bold text-sm text-black block leading-tight">{pallet.artigo_descricao}</span>
-                  <span className="font-mono text-xs text-gray-800">Cód: {pallet.artigo_codigo}</span>
-                </>
+                <div className="text-right">
+                  <p className="uppercase text-[9px] text-gray-600">DESTINATÁRIO</p>
+                  <p className="font-extrabold text-[11px] text-slate-900">{pallet.empresa_owner}</p>
+                  <p>Plataforma Logística Azambuja</p>
+                  <p>Cód. Cliente: {pallet.regrac_cliente_aplicada}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Section 2: Article & Batch Metadata */}
+            <div className="border-b-2 border-black pb-2 mb-2 text-[11px]">
+              <div className="mb-2">
+                <span className="text-[9px] font-bold text-gray-600 block uppercase">
+                  {packingListProducts ? 'PACKING LIST (MÚLTIPLOS PRODUTOS)' : 'DESCRIÇÃO DO PRODUTO'}
+                </span>
+                {packingListProducts ? (
+                  <div className="space-y-1 mt-1">
+                    {packingListProducts.map((prod, idx) => (
+                      <div key={idx} className="text-[9px] border-t border-gray-300 pt-1">
+                        <span className="font-bold text-black">{prod.artigo_descricao}</span>
+                        <div className="flex justify-between font-mono">
+                          <span>Cód: {prod.artigo_codigo}</span>
+                          <span className="font-bold text-amber-800">{prod.quantidade} un</span>
+                        </div>
+                        <div className="text-[8px] text-gray-600 mt-0.5">Lote: {prod.lote} | Val: {prod.data_validade}</div>
+                        <div className="mt-0.5 text-center">
+                          <BarcodeRenderer
+                            value={`(01)${prod.ean_barcode}(10)${prod.lote}(15)${prod.data_validade.replace(/-/g, '').slice(2)}(37)${prod.quantidade}`}
+                            height={24}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <>
+                    <span className="font-bold text-sm text-black block leading-tight">{pallet.artigo_descricao}</span>
+                    <span className="font-mono text-xs text-gray-800">Cód: {pallet.artigo_codigo}</span>
+                  </>
+                )}
+              </div>
+
+              {!packingListProducts && (
+                <div className="grid grid-cols-2 gap-2 border-t border-gray-300 pt-2">
+                  <div>
+                    <span className="text-[9px] font-bold text-gray-600 block">LOTE (10)</span>
+                    <span className="font-mono font-bold text-xs">{pallet.lote}</span>
+                  </div>
+
+                  <div>
+                    <span className="text-[9px] font-bold text-gray-600 block">VALIDADE (15)</span>
+                    <span className="font-mono font-bold text-xs">{pallet.data_validade}</span>
+                  </div>
+
+                  <div>
+                    <span className="text-[9px] font-bold text-gray-600 block">QTD CAIXAS (37)</span>
+                    <span className="font-mono font-bold text-sm text-amber-800">{pallet.caixas_na_palete} CX</span>
+                  </div>
+
+                  <div>
+                    <span className="text-[9px] font-bold text-gray-600 block">PESO BRUTO</span>
+                    <span className="font-mono font-bold text-xs">{pallet.peso_bruto_kg} KG</span>
+                  </div>
+                </div>
               )}
             </div>
 
+            {/* Section 3: GS1-128 Product Info Barcode (only for mono-produto) */}
             {!packingListProducts && (
-              <div className="grid grid-cols-2 gap-2 border-t border-gray-300 pt-2">
-                <div>
-                  <span className="text-[9px] font-bold text-gray-600 block">LOTE (10)</span>
-                  <span className="font-mono font-bold text-xs">{pallet.lote}</span>
-                </div>
-
-                <div>
-                  <span className="text-[9px] font-bold text-gray-600 block">VALIDADE (15)</span>
-                  <span className="font-mono font-bold text-xs">{pallet.data_validade}</span>
-                </div>
-
-                <div>
-                  <span className="text-[9px] font-bold text-gray-600 block">QTD CAIXAS (37)</span>
-                  <span className="font-mono font-bold text-sm text-amber-800">{pallet.caixas_na_palete} CX</span>
-                </div>
-
-                <div>
-                  <span className="text-[9px] font-bold text-gray-600 block">PESO BRUTO</span>
-                  <span className="font-mono font-bold text-xs">{pallet.peso_bruto_kg} KG</span>
-                </div>
+              <div className="border-b-2 border-black pb-2 mb-2 text-center">
+                <span className="text-[9px] font-bold text-gray-600 block mb-1">
+                  GS1-128 (GTIN + LOTE + VALIDADE + QTD)
+                </span>
+                <BarcodeRenderer
+                  value={`(01)${pallet.ean_barcode}(10)${pallet.lote}(15)${pallet.data_validade.replace(/-/g, '').slice(2)}(37)${pallet.caixas_na_palete}`}
+                  height={40}
+                />
               </div>
             )}
-          </div>
 
-          {/* Section 3: GS1-128 Product Info Barcode (only for mono-produto) */}
-          {!packingListProducts && (
-            <div className="border-b-2 border-black pb-2 mb-2 text-center">
-              <span className="text-[9px] font-bold text-gray-600 block mb-1">
-                GS1-128 (GTIN + LOTE + VALIDADE + QTD)
+            {/* Section 4: Master SSCC Barcode */}
+            <div className="text-center bg-gray-50 p-2 border border-black rounded">
+              <span className="text-[10px] font-extrabold text-black block mb-1 uppercase tracking-wider">
+                SSCC - CÓDIGO SEQUENCIAL DE RECIPIENTE DE TRANSPORTE
               </span>
               <BarcodeRenderer
-                value={`(01)${pallet.ean_barcode}(10)${pallet.lote}(15)${pallet.data_validade.replace(/-/g, '').slice(2)}(37)${pallet.caixas_na_palete}`}
-                height={40}
+                value={`(00) ${pallet.sscc}`}
+                height={55}
               />
+              <span className="font-mono text-sm font-extrabold tracking-widest text-black mt-1 block">
+                SSCC: {pallet.sscc}
+              </span>
             </div>
-          )}
-
-          {/* Section 4: Master SSCC Barcode */}
-          <div className="text-center bg-gray-50 p-2 border border-black rounded">
-            <span className="text-[10px] font-extrabold text-black block mb-1 uppercase tracking-wider">
-              SSCC - CÓDIGO SEQUENCIAL DE RECIPIENTE DE TRANSPORTE
-            </span>
-            <BarcodeRenderer
-              value={`(00) ${pallet.sscc}`}
-              height={55}
-            />
-            <span className="font-mono text-sm font-extrabold tracking-widest text-black mt-1 block">
-              SSCC: {pallet.sscc}
-            </span>
           </div>
-        </div>
+        ) : (
+          // Etiquetas individuais (uma por produto)
+          <div className="space-y-4 max-h-96 overflow-y-auto no-print">
+            {packingListProducts.map((prod, idx) => (
+              <div key={idx} className="bg-white text-black p-5 rounded-lg border-2 border-black max-w-md mx-auto font-sans shadow-lg select-text text-left print:page-break-after-always">
+                {/* Título etiqueta individual */}
+                <div className="text-center mb-2 font-bold text-sm border-b-2 border-black pb-2">
+                  ETIQUETA {idx + 1}/{packingListProducts.length}
+                </div>
+
+                {/* Section 1: Header */}
+                <div className="border-b-2 border-black pb-2 mb-2">
+                  <div className="flex justify-between items-start text-[10px] font-bold tracking-tight">
+                    <div>
+                      <p className="uppercase text-[9px] text-gray-600">REMETENTE</p>
+                      <p className="font-extrabold text-[11px]">TicSol Logistics Hub B2B</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="uppercase text-[9px] text-gray-600">DESTINATÁRIO</p>
+                      <p className="font-extrabold text-[11px]">{pallet.empresa_owner}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 2: Produto */}
+                <div className="border-b-2 border-black pb-2 mb-2 text-[11px]">
+                  <span className="text-[9px] font-bold text-gray-600 block uppercase mb-1">Produto</span>
+                  <span className="font-bold text-black block">{prod.artigo_descricao}</span>
+                  <span className="font-mono text-xs text-gray-800">Cód: {prod.artigo_codigo}</span>
+
+                  <div className="grid grid-cols-2 gap-2 border-t border-gray-300 pt-2 mt-2 text-[10px]">
+                    <div>
+                      <span className="font-bold text-gray-600 block">LOTE</span>
+                      <span className="font-mono">{prod.lote}</span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-gray-600 block">VALIDADE</span>
+                      <span className="font-mono">{prod.data_validade}</span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-gray-600 block">QTD (un)</span>
+                      <span className="font-mono text-amber-800 font-bold">{prod.quantidade}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 3: GS1-128 */}
+                <div className="border-b-2 border-black pb-2 mb-2 text-center">
+                  <span className="text-[8px] font-bold text-gray-600 block mb-1">GS1-128</span>
+                  <BarcodeRenderer
+                    value={`(01)${prod.ean_barcode}(10)${prod.lote}(15)${prod.data_validade.replace(/-/g, '').slice(2)}(37)${prod.quantidade}`}
+                    height={35}
+                  />
+                </div>
+
+                {/* Section 4: SSCC */}
+                <div className="text-center bg-gray-50 p-2 border border-black rounded">
+                  <span className="text-[9px] font-extrabold text-black block uppercase">SSCC</span>
+                  <BarcodeRenderer
+                    value={`(00) ${pallet.sscc}`}
+                    height={40}
+                  />
+                  <span className="font-mono text-xs font-bold tracking-widest text-black mt-1 block">
+                    {pallet.sscc}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Footer info */}
         <div className="mt-4 text-center text-xs text-slate-500">
