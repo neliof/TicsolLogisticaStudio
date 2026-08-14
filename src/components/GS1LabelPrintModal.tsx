@@ -19,8 +19,8 @@ export const GS1LabelPrintModal: React.FC<GS1LabelPrintModalProps> = ({ pallet, 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto no-print print:fixed print:inset-0 print:bg-white print:backdrop-blur-none print:p-0 print:overflow-visible">
-      <div className="relative bg-white border border-slate-200 rounded-xl shadow-2xl max-w-2xl w-full p-6 text-slate-900 my-8 print:border-0 print:shadow-none print:rounded-none print:p-0 print:max-w-none print:w-full print:my-0">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto modal-backdrop">
+      <div className="relative bg-white border border-slate-200 rounded-xl shadow-2xl max-w-2xl w-full p-6 text-slate-900 my-8 modal-container">
         {/* Header bar */}
         <div className="flex items-center justify-between border-b border-slate-200 pb-4 mb-4 no-print">
           <div className="flex items-center gap-3">
