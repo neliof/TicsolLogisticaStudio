@@ -6,7 +6,7 @@ import { X, Printer, CheckCircle2, ShieldCheck, Tag } from 'lucide-react';
 interface GS1LabelPrintModalProps {
   pallet: PalletSSCC | null;
   onClose: () => void;
-  packingListProducts?: Array<{ artigo_codigo: string; artigo_descricao: string; quantidade: number; lote: string }>;
+  packingListProducts?: Array<{ artigo_codigo: string; artigo_descricao: string; quantidade: number; lote: string; ean_barcode: string; data_validade: string }>;
 }
 
 export const GS1LabelPrintModal: React.FC<GS1LabelPrintModalProps> = ({ pallet, onClose, packingListProducts }) => {
@@ -88,6 +88,13 @@ export const GS1LabelPrintModal: React.FC<GS1LabelPrintModalProps> = ({ pallet, 
                         <span>Cód: {prod.artigo_codigo}</span>
                         <span className="font-bold text-amber-800">{prod.quantidade} un</span>
                       </div>
+                      <div className="text-[8px] text-gray-600 mt-0.5">Lote: {prod.lote} | Val: {prod.data_validade}</div>
+                      <div className="mt-0.5 text-center">
+                        <BarcodeRenderer
+                          value={`(01)${prod.ean_barcode}(10)${prod.lote}(15)${prod.data_validade.replace(/-/g, '').slice(2)}(37)${prod.quantidade}`}
+                          height={24}
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -99,39 +106,43 @@ export const GS1LabelPrintModal: React.FC<GS1LabelPrintModalProps> = ({ pallet, 
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-2 border-t border-gray-300 pt-2">
-              <div>
-                <span className="text-[9px] font-bold text-gray-600 block">LOTE (10)</span>
-                <span className="font-mono font-bold text-xs">{pallet.lote}</span>
-              </div>
+            {!packingListProducts && (
+              <div className="grid grid-cols-2 gap-2 border-t border-gray-300 pt-2">
+                <div>
+                  <span className="text-[9px] font-bold text-gray-600 block">LOTE (10)</span>
+                  <span className="font-mono font-bold text-xs">{pallet.lote}</span>
+                </div>
 
-              <div>
-                <span className="text-[9px] font-bold text-gray-600 block">VALIDADE (15)</span>
-                <span className="font-mono font-bold text-xs">{pallet.data_validade}</span>
-              </div>
+                <div>
+                  <span className="text-[9px] font-bold text-gray-600 block">VALIDADE (15)</span>
+                  <span className="font-mono font-bold text-xs">{pallet.data_validade}</span>
+                </div>
 
-              <div>
-                <span className="text-[9px] font-bold text-gray-600 block">QTD CAIXAS (37)</span>
-                <span className="font-mono font-bold text-sm text-amber-800">{pallet.caixas_na_palete} CX</span>
-              </div>
+                <div>
+                  <span className="text-[9px] font-bold text-gray-600 block">QTD CAIXAS (37)</span>
+                  <span className="font-mono font-bold text-sm text-amber-800">{pallet.caixas_na_palete} CX</span>
+                </div>
 
-              <div>
-                <span className="text-[9px] font-bold text-gray-600 block">PESO BRUTO</span>
-                <span className="font-mono font-bold text-xs">{pallet.peso_bruto_kg} KG</span>
+                <div>
+                  <span className="text-[9px] font-bold text-gray-600 block">PESO BRUTO</span>
+                  <span className="font-mono font-bold text-xs">{pallet.peso_bruto_kg} KG</span>
+                </div>
               </div>
+            )}
+          </div>
+
+          {/* Section 3: GS1-128 Product Info Barcode (only for mono-produto) */}
+          {!packingListProducts && (
+            <div className="border-b-2 border-black pb-2 mb-2 text-center">
+              <span className="text-[9px] font-bold text-gray-600 block mb-1">
+                GS1-128 (GTIN + LOTE + VALIDADE + QTD)
+              </span>
+              <BarcodeRenderer
+                value={`(01)${pallet.ean_barcode}(10)${pallet.lote}(15)${pallet.data_validade.replace(/-/g, '').slice(2)}(37)${pallet.caixas_na_palete}`}
+                height={40}
+              />
             </div>
-          </div>
-
-          {/* Section 3: GS1-128 Product Info Barcode */}
-          <div className="border-b-2 border-black pb-2 mb-2 text-center">
-            <span className="text-[9px] font-bold text-gray-600 block mb-1">
-              GS1-128 (GTIN + LOTE + VALIDADE + QTD)
-            </span>
-            <BarcodeRenderer
-              value={`(01)${pallet.ean_barcode}(10)${pallet.lote}(15)${pallet.data_validade.replace(/-/g, '').slice(2)}(37)${pallet.caixas_na_palete}`}
-              height={40}
-            />
-          </div>
+          )}
 
           {/* Section 4: Master SSCC Barcode */}
           <div className="text-center bg-gray-50 p-2 border border-black rounded">

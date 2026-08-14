@@ -140,7 +140,9 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
         artigo_codigo: l.artigo_codigo,
         artigo_descricao: l.artigo_descricao,
         quantidade: l.quantidade_solicitada,
-        lote: l.lote
+        lote: l.lote,
+        ean_barcode: l.ean_barcode,
+        data_validade: l.data_validade
       })) : undefined
     };
 
