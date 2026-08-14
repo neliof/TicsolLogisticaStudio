@@ -44,18 +44,6 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
   const [packingMode, setPackingMode] = useState(false);
   const [selectedLinhasIds, setSelectedLinhasIds] = useState<Set<string>>(new Set([selectedLinhaId]));
 
-  // Label format selector
-  type LabelFormat = 'A4' | 'A5' | 'Zebra4x6' | 'Zebra100x150';
-  const [labelFormat, setLabelFormat] = useState<LabelFormat>('A4');
-  const [labelZoom, setLabelZoom] = useState(50);
-
-  const labelFormats: Record<LabelFormat, { label: string; width: string; height: string; padding: string; textScale: number }> = {
-    A4: { label: 'A4 (210x297mm)', width: 'w-full', height: 'min-h-[280mm]', padding: 'p-8', textScale: 1 },
-    A5: { label: 'A5 (105x148mm)', width: 'max-w-xs', height: 'min-h-[140mm]', padding: 'p-4', textScale: 0.75 },
-    Zebra4x6: { label: 'Zebra 4x6" (101x152mm)', width: 'max-w-sm', height: 'min-h-[150mm]', padding: 'p-4', textScale: 0.8 },
-    Zebra100x150: { label: 'Zebra 100x150mm', width: 'max-w-sm', height: 'min-h-[150mm]', padding: 'p-3', textScale: 0.75 }
-  };
-  const currentFormat = labelFormats[labelFormat];
 
   // Rule: Sonae MC caderno de encargos
   const activeRule = ruleConfigs.find(r => r.cliente_id === 'SONAE_MC') || ruleConfigs[0];
@@ -64,7 +52,6 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
   const [caixasPorCamada, setCaixasPorCamada] = useState<number>(10);
   const [numCamadas, setNumCamadas] = useState<number>(4);
   const [activePrintPallet, setActivePrintPallet] = useState<PalletSSCC | null>(null);
-  const [printPalletList, setPrintPalletList] = useState<PalletSSCC[]>([]); // múltiplas etiquetas
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   // Cálculos
@@ -126,73 +113,36 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
       qtdCaixas: caixasNaPaleteProposta
     });
 
-    // Criar palete(s) para impressão
-    let palletesToPrint: PalletSSCC[] = [];
-
-    if (packingMode) {
-      // Gerar etiqueta individual por artigo
-      palletesToPrint = linhasApalete.map(linha => {
-        const ssccItem = generateSSCC(3, '5601234').ssccFull;
-        const validadeItem = formatToGS1Date(linha.data_validade || '2027-12-31');
-        const gs1Item = buildGS1128String({
-          sscc: ssccItem,
-          gtinEan: linha.ean_barcode,
-          lote: linha.lote || 'LOTE-STD',
-          validadeYYMMDD: validadeItem,
-          qtdCaixas: linha.quantidade_solicitada
-        });
-
-        return {
-          sscc: ssccItem,
-          guia_id: selectedGuia.id,
-          artigo_codigo: linha.artigo_codigo,
-          artigo_descricao: linha.artigo_descricao,
-          ean_barcode: linha.ean_barcode,
-          lote: linha.lote || 'LOTE-PADRAO',
-          data_validade: linha.data_validade || '2027-12-31',
-          caixas_na_palete: linha.quantidade_solicitada,
-          unidades_totais: linha.quantidade_solicitada * 10,
-          camadas: 1,
-          caixas_por_camada: linha.quantidade_solicitada,
-          altura_total_cm: 100,
-          peso_liquido_kg: linha.quantidade_solicitada * linha.peso_unitario_kg * 0.9,
-          peso_bruto_kg: linha.quantidade_solicitada * linha.peso_unitario_kg + 2,
-          regrac_cliente_aplicada: 'SONAE_MC',
-          empresa_owner: selectedGuia.cliente_nome,
-          localizacao_atual: 'EM_STAGING',
-          estado_palete: 'EM_STAGING',
-          data_criacao: new Date().toISOString().replace('T', ' ').slice(0, 19),
-          operador: 'Op. Paletização Expedição',
-          gs1_128_barcode_string: gs1Item
-        };
-      });
-    } else {
-      // Mono-produto: uma etiqueta única
-      const newPallet: PalletSSCC = {
-        sscc: ssccFull,
-        guia_id: selectedGuia.id,
-        artigo_codigo: primeiraLinha.artigo_codigo,
-        artigo_descricao: primeiraLinha.artigo_descricao,
-        ean_barcode: primeiraLinha.ean_barcode,
-        lote: primeiraLinha.lote || 'LOTE-PADRAO',
-        data_validade: primeiraLinha.data_validade || '2027-12-31',
-        caixas_na_palete: caixasNaPaleteProposta,
-        unidades_totais: caixasNaPaleteProposta * 10,
-        camadas: numCamadas,
-        caixas_por_camada: caixasPorCamada,
-        altura_total_cm: alturaPaleteCm,
-        peso_liquido_kg: totalPeso * 0.9,
-        peso_bruto_kg: totalPeso + 22,
-        regrac_cliente_aplicada: 'SONAE_MC',
-        empresa_owner: selectedGuia.cliente_nome,
-        localizacao_atual: 'EM_STAGING',
-        estado_palete: 'EM_STAGING',
-        data_criacao: new Date().toISOString().replace('T', ' ').slice(0, 19),
-        operador: 'Op. Paletização Expedição',
-        gs1_128_barcode_string: gs1128Str
-      };
-      palletesToPrint = [newPallet];
-    }
+    // Criar palete para impressão (modal único, com packing list se aplicável)
+    const palletaToPrint: PalletSSCC = {
+      sscc: ssccFull,
+      guia_id: selectedGuia.id,
+      artigo_codigo: primeiraLinha.artigo_codigo,
+      artigo_descricao: primeiraLinha.artigo_descricao,
+      ean_barcode: primeiraLinha.ean_barcode,
+      lote: primeiraLinha.lote || 'LOTE-PADRAO',
+      data_validade: primeiraLinha.data_validade || '2027-12-31',
+      caixas_na_palete: caixasNaPaleteProposta,
+      unidades_totais: caixasNaPaleteProposta * 10,
+      camadas: numCamadas,
+      caixas_por_camada: caixasPorCamada,
+      altura_total_cm: alturaPaleteCm,
+      peso_liquido_kg: totalPeso * 0.9,
+      peso_bruto_kg: totalPeso + 22,
+      regrac_cliente_aplicada: 'SONAE_MC',
+      empresa_owner: selectedGuia.cliente_nome,
+      localizacao_atual: 'EM_STAGING',
+      estado_palete: 'EM_STAGING',
+      data_criacao: new Date().toISOString().replace('T', ' ').slice(0, 19),
+      operador: 'Op. Paletização Expedição',
+      gs1_128_barcode_string: gs1128Str,
+      packingListProducts: packingMode ? linhasApalete.map(l => ({
+        artigo_codigo: l.artigo_codigo,
+        artigo_descricao: l.artigo_descricao,
+        quantidade: l.quantidade_solicitada,
+        lote: l.lote
+      })) : undefined
+    };
 
     // Criar palete expedição
     const paletaExpedicao: PaletaExpedicao = {
@@ -218,16 +168,10 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
 
     onPalletCreated(paletaExpedicao, selectedGuia.id, primeiraLinha.id, caixasNaPaleteProposta);
 
-    setToastMsg(`Palete SSCC ${ssccFull} criada! (${packingMode ? `Packing List - ${palletesToPrint.length} etiquetas` : 'Mono-produto'})`);
+    setToastMsg(`Palete SSCC ${ssccFull} criada!`);
     setTimeout(() => setToastMsg(null), 4000);
 
-    if (packingMode) {
-      setPrintPalletList(palletesToPrint);
-      setActivePrintPallet(null);
-    } else {
-      setActivePrintPallet(palletesToPrint[0]);
-      setPrintPalletList([]);
-    }
+    setActivePrintPallet(palletaToPrint);
   };
 
   return (
@@ -240,164 +184,13 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
         </div>
       )}
 
-      {/* Print Modal - Single or Multiple */}
-      {(activePrintPallet || printPalletList.length > 0) && (
-        packingMode && printPalletList.length > 0 ? (
-          // Multiple labels for packing list
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto no-print">
-            <div className="relative bg-white border border-slate-200 rounded-xl shadow-2xl max-w-4xl w-full p-6 text-slate-900 my-8">
-              <div className="flex items-center justify-between border-b border-slate-200 pb-4 mb-4">
-                <h3 className="font-semibold text-lg text-slate-900">
-                  Etiquetas Packing List ({printPalletList.length} produtos)
-                </h3>
-                <button
-                  onClick={() => setPrintPalletList([])}
-                  className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-                >
-                  ✕
-                </button>
-              </div>
-
-              {/* Format + Zoom Controls */}
-              <div className="mb-4 space-y-3">
-                <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
-                  <label className="text-sm font-semibold text-slate-700 block mb-2">Formato de Etiqueta:</label>
-                  <div className="flex gap-2 flex-wrap">
-                    {Object.entries(labelFormats).map(([format, data]) => (
-                      <button
-                        key={format}
-                        onClick={() => setLabelFormat(format as LabelFormat)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                          labelFormat === format
-                            ? 'bg-purple-600 text-white border-2 border-purple-700'
-                            : 'bg-white text-slate-700 border-2 border-slate-300 hover:bg-slate-100'
-                        }`}
-                      >
-                        {data.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
-                  <label className="text-sm font-semibold text-slate-700 block mb-3">Zoom Pré-Visualização:</label>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => setLabelZoom(Math.max(25, labelZoom - 10))}
-                      className="px-2 py-1 bg-slate-300 hover:bg-slate-400 rounded font-bold text-sm"
-                    >
-                      −
-                    </button>
-                    <input
-                      type="range"
-                      min="25"
-                      max="100"
-                      step="5"
-                      value={labelZoom}
-                      onChange={(e) => setLabelZoom(Number(e.target.value))}
-                      className="flex-1"
-                    />
-                    <button
-                      onClick={() => setLabelZoom(Math.min(100, labelZoom + 10))}
-                      className="px-2 py-1 bg-slate-300 hover:bg-slate-400 rounded font-bold text-sm"
-                    >
-                      +
-                    </button>
-                    <span className="text-sm font-mono font-bold text-slate-700 min-w-[45px] text-right">{labelZoom}%</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-4 mb-4">
-                <button
-                  onClick={() => window.print()}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-sm"
-                >
-                  🖨️ Imprimir {printPalletList.length} Etiquetas ({labelFormat})
-                </button>
-                <button
-                  onClick={() => setPrintPalletList([])}
-                  className="px-4 py-2 bg-slate-300 hover:bg-slate-400 text-slate-900 font-semibold rounded-lg shadow-sm"
-                >
-                  ← Voltar
-                </button>
-              </div>
-              <div className={`space-y-4 ${labelFormat !== 'A4' ? 'flex flex-wrap gap-4 justify-center' : ''}`} style={{ transform: `scale(${labelZoom / 100})`, transformOrigin: 'top center' }}>
-                {printPalletList.map((pallet, idx) => (
-                  <div key={idx} className={`bg-white text-black ${currentFormat.padding} rounded-lg border-2 border-black shadow-lg print:page-break-after-always ${currentFormat.height} ${currentFormat.width}`} style={{ fontSize: `${currentFormat.textScale * 16}px` }}>
-                    <p className="text-center text-sm font-bold text-gray-600 mb-4">ETIQUETA LOGÍSTICA {idx + 1}/{printPalletList.length}</p>
-
-                    {/* Header */}
-                    <div className="border-b-4 border-black pb-4 mb-4">
-                      <div className="flex justify-between items-start text-sm font-bold">
-                        <div>
-                          <p className="uppercase text-xs text-gray-600 font-bold">Remetente / Expedidor</p>
-                          <p className="font-extrabold text-base">TicSol Logistics Hub B2B</p>
-                          <p className="text-sm">Armazém Central Lisboa</p>
-                          <p className="text-sm">NIF: 509876543</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="uppercase text-xs text-gray-600 font-bold">Destinatário</p>
-                          <p className="font-extrabold text-base">{pallet.empresa_owner}</p>
-                          <p className="text-sm">Plataforma Logística</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Produto Info */}
-                    <div className="border-b-4 border-black pb-4 mb-4">
-                      <p className="uppercase text-xs font-bold text-gray-600 mb-2">Descrição do Produto</p>
-                      <p className="font-bold text-lg">{pallet.artigo_descricao}</p>
-                      <p className="font-mono text-sm text-gray-800 mb-3">Código: {pallet.artigo_codigo}</p>
-
-                      <div className="grid grid-cols-4 gap-3 text-sm font-bold">
-                        <div>
-                          <p className="uppercase text-xs text-gray-600">Lote (10)</p>
-                          <p className="font-mono text-base">{pallet.lote}</p>
-                        </div>
-                        <div>
-                          <p className="uppercase text-xs text-gray-600">Validade (15)</p>
-                          <p className="font-mono text-base">{pallet.data_validade}</p>
-                        </div>
-                        <div>
-                          <p className="uppercase text-xs text-gray-600">Quantidade (37)</p>
-                          <p className="font-mono text-base text-amber-800">{pallet.caixas_na_palete} CX</p>
-                        </div>
-                        <div>
-                          <p className="uppercase text-xs text-gray-600">Peso Bruto</p>
-                          <p className="font-mono text-base">{pallet.peso_bruto_kg} KG</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* GS1-128 Barcode */}
-                    <div className="border-b-4 border-black pb-4 mb-4 text-center">
-                      <p className="uppercase text-xs font-bold text-gray-600 mb-3">GS1-128 Produto (GTIN + Lote + Validade + QTD)</p>
-                      <div className="flex justify-center">
-                        <BarcodeRenderer value={pallet.gs1_128_barcode_string} height={60} />
-                      </div>
-                    </div>
-
-                    {/* SSCC Barcode - Large */}
-                    <div className="border-t-4 border-black pt-4 text-center flex-1">
-                      <p className="uppercase text-xs font-bold text-gray-600 mb-3">SSCC GS1-18 Palete</p>
-                      <div className="flex justify-center mb-3">
-                        <BarcodeRenderer value={pallet.sscc} height={80} />
-                      </div>
-                      <p className="font-mono font-bold text-xl tracking-widest">{pallet.sscc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        ) : (
-          // Single label for mono-produto
-          <GS1LabelPrintModal
-            pallet={activePrintPallet}
-            onClose={() => setActivePrintPallet(null)}
-          />
-        )
+      {/* Label Print Modal - Identical to Receção */}
+      {activePrintPallet && (
+        <GS1LabelPrintModal
+          pallet={activePrintPallet}
+          onClose={() => setActivePrintPallet(null)}
+          packingListProducts={packingMode ? activePrintPallet.packingListProducts : undefined}
+        />
       )}
 
       {/* Module Title */}

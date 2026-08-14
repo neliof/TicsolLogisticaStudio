@@ -72,6 +72,7 @@ export interface PalletSSCC {
   data_criacao: string;
   operador: string;
   gs1_128_barcode_string: string;
+  packingListProducts?: Array<{ artigo_codigo: string; artigo_descricao: string; quantidade: number; lote: string }>;
 }
 
 export interface StockPosition {
