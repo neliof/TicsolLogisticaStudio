@@ -87,7 +87,7 @@ export const GS1LabelPrintModal: React.FC<GS1LabelPrintModalProps> = ({ pallet, 
         {/* Physical GS1 Label Container - Modo Único ou Individual */}
         {singleLabel || !packingListProducts ? (
           // Etiqueta única (packing list ou mono-produto)
-          <div className="bg-white text-black p-5 rounded-lg border-2 border-black max-w-md mx-auto font-sans shadow-lg select-text text-left print:max-w-none print:mx-0 print:rounded-none print:shadow-none print:p-4 print:border-4">
+          <div className="bg-white text-black p-5 rounded-lg border-2 border-black max-w-md mx-auto font-sans shadow-lg select-text text-left label-print-area">
             {/* Section 1: Header Logistics */}
             <div className="border-b-2 border-black pb-2 mb-2">
               <div className="flex justify-between items-start text-[10px] font-bold tracking-tight">
@@ -193,11 +193,11 @@ export const GS1LabelPrintModal: React.FC<GS1LabelPrintModalProps> = ({ pallet, 
           </div>
         ) : (
           // Etiquetas individuais (uma por produto)
-          <div className="space-y-4 max-h-96 overflow-y-auto print:space-y-0 print:max-h-full print:overflow-visible">
+          <div className="space-y-4 max-h-96 overflow-y-auto label-print-area-wrapper">
             {packingListProducts.map((prod, idx) => (
-              <div key={idx} className="bg-white text-black p-5 rounded-lg border-2 border-black max-w-md mx-auto font-sans shadow-lg select-text text-left print:max-w-none print:mx-0 print:rounded-none print:shadow-none print:p-4 print:border-4 print:page-break-after-always print:mb-0">
+              <div key={idx} className="bg-white text-black p-5 rounded-lg border-2 border-black max-w-md mx-auto font-sans shadow-lg select-text text-left label-print-area">
                 {/* Título etiqueta individual */}
-                <div className="text-center mb-2 font-bold text-sm border-b-2 border-black pb-2 print:hidden">
+                <div className="text-center mb-2 font-bold text-sm border-b-2 border-black pb-2 no-print">
                   ETIQUETA {idx + 1}/{packingListProducts.length}
                 </div>
 

@@ -42,58 +42,59 @@
 
 /* Print CSS for GS1-128 Logistic Labels & Receiving Slips */
 @media print {
+  /* Hide EVERYTHING by default */
   * {
+    display: none !important;
+  }
+
+  /* Show only what needs to print */
+  body {
+    display: block !important;
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Show etiqueta print areas only */
+  .label-print-area {
+    display: block !important;
+    background: white !important;
+    color: black !important;
+    border: 2px solid black !important;
+    padding: 1.25rem !important;
+    margin: 0 auto 0.5cm auto !important;
+    page-break-inside: avoid !important;
+    max-width: 105mm !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  .label-print-area * {
+    display: block !important;
     background: transparent !important;
     color: black !important;
     box-shadow: none !important;
     text-shadow: none !important;
+    margin-bottom: 0.25rem;
   }
 
-  body {
-    background: white !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  /* Hide modal backdrop and UI elements */
-  .modal-backdrop {
-    position: static !important;
-    inset: auto !important;
-    background: transparent !important;
+  .label-print-area div {
     display: block !important;
-    padding: 0 !important;
   }
 
-  .modal-container {
-    position: static !important;
-    background: transparent !important;
-    border: none !important;
-    padding: 0 !important;
-    max-width: none !important;
-    width: 100% !important;
+  .label-print-area p {
+    display: block !important;
     margin: 0 !important;
+    padding: 0 !important;
   }
 
-  /* Hide all no-print elements */
-  .no-print,
-  [class*="no-print"] {
-    display: none !important;
+  .label-print-area span {
+    display: inline !important;
   }
 
-  /* Etiqueta styling during print */
-  .bg-white.text-black.border-2.border-black {
-    background: white !important;
-    color: black !important;
-    border: 2px solid black !important;
-    page-break-inside: avoid;
-    margin-bottom: 0.5cm;
-  }
-
-  /* Remove shadow and border radius from etiquetas */
-  .shadow-lg,
-  .rounded-lg {
-    box-shadow: none !important;
-    border-radius: 0 !important;
+  /* Wrapper for individual labels - keep scroll behavior removed */
+  .label-print-area-wrapper {
+    display: block !important;
   }
 }
 
