@@ -19,10 +19,10 @@ export const GS1LabelPrintModal: React.FC<GS1LabelPrintModalProps> = ({ pallet, 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto no-print">
-      <div className="relative bg-white border border-slate-200 rounded-xl shadow-2xl max-w-2xl w-full p-6 text-slate-900 my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto no-print print:fixed print:inset-0 print:bg-white print:backdrop-blur-none print:p-0 print:overflow-visible">
+      <div className="relative bg-white border border-slate-200 rounded-xl shadow-2xl max-w-2xl w-full p-6 text-slate-900 my-8 print:border-0 print:shadow-none print:rounded-none print:p-0 print:max-w-none print:w-full print:my-0">
         {/* Header bar */}
-        <div className="flex items-center justify-between border-b border-slate-200 pb-4 mb-4">
+        <div className="flex items-center justify-between border-b border-slate-200 pb-4 mb-4 no-print">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-50 text-blue-600 rounded-lg border border-blue-100">
               <Tag className="w-5 h-5" />
@@ -41,7 +41,7 @@ export const GS1LabelPrintModal: React.FC<GS1LabelPrintModalProps> = ({ pallet, 
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-between mb-6 bg-slate-50 p-3 rounded-lg border border-slate-200">
+        <div className="flex items-center justify-between mb-6 bg-slate-50 p-3 rounded-lg border border-slate-200 no-print">
           <div className="flex items-center gap-2 text-xs text-emerald-700 font-semibold">
             <ShieldCheck className="w-4 h-4" />
             Validação GS1 Modulo-10 Aprovada
@@ -57,7 +57,7 @@ export const GS1LabelPrintModal: React.FC<GS1LabelPrintModalProps> = ({ pallet, 
 
         {/* Modo Impressão - Único vs Individual */}
         {packingListProducts && packingListProducts.length > 1 && (
-          <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200 no-print">
             <label className="text-sm font-semibold text-slate-700 block mb-2">Modo Impressão:</label>
             <div className="flex gap-3">
               <button
@@ -87,7 +87,7 @@ export const GS1LabelPrintModal: React.FC<GS1LabelPrintModalProps> = ({ pallet, 
         {/* Physical GS1 Label Container - Modo Único ou Individual */}
         {singleLabel || !packingListProducts ? (
           // Etiqueta única (packing list ou mono-produto)
-          <div className="bg-white text-black p-5 rounded-lg border-2 border-black max-w-md mx-auto font-sans shadow-lg select-text text-left">
+          <div className="bg-white text-black p-5 rounded-lg border-2 border-black max-w-md mx-auto font-sans shadow-lg select-text text-left print:max-w-none print:mx-0 print:rounded-none print:shadow-none print:p-4 print:border-4">
             {/* Section 1: Header Logistics */}
             <div className="border-b-2 border-black pb-2 mb-2">
               <div className="flex justify-between items-start text-[10px] font-bold tracking-tight">
@@ -193,11 +193,11 @@ export const GS1LabelPrintModal: React.FC<GS1LabelPrintModalProps> = ({ pallet, 
           </div>
         ) : (
           // Etiquetas individuais (uma por produto)
-          <div className="space-y-4 max-h-96 overflow-y-auto no-print">
+          <div className="space-y-4 max-h-96 overflow-y-auto print:space-y-0 print:max-h-full print:overflow-visible">
             {packingListProducts.map((prod, idx) => (
-              <div key={idx} className="bg-white text-black p-5 rounded-lg border-2 border-black max-w-md mx-auto font-sans shadow-lg select-text text-left print:page-break-after-always">
+              <div key={idx} className="bg-white text-black p-5 rounded-lg border-2 border-black max-w-md mx-auto font-sans shadow-lg select-text text-left print:max-w-none print:mx-0 print:rounded-none print:shadow-none print:p-4 print:border-4 print:page-break-after-always print:mb-0">
                 {/* Título etiqueta individual */}
-                <div className="text-center mb-2 font-bold text-sm border-b-2 border-black pb-2">
+                <div className="text-center mb-2 font-bold text-sm border-b-2 border-black pb-2 print:hidden">
                   ETIQUETA {idx + 1}/{packingListProducts.length}
                 </div>
 
@@ -263,7 +263,7 @@ export const GS1LabelPrintModal: React.FC<GS1LabelPrintModalProps> = ({ pallet, 
         )}
 
         {/* Footer info */}
-        <div className="mt-4 text-center text-xs text-slate-500">
+        <div className="mt-4 text-center text-xs text-slate-500 no-print">
           Operador: {pallet.operador} • Data de Criação: {pallet.data_criacao}
         </div>
       </div>
