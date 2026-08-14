@@ -45,6 +45,8 @@
   body {
     background: white !important;
     color: black !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
   .no-print {
     display: none !important;
@@ -60,6 +62,29 @@
     page-break-after: always;
     border: 2px solid black;
     font-family: 'IBM Plex Sans', sans-serif;
+  }
+  /* Hide modal backdrop, keep only etiquetas */
+  .fixed.inset-0.z-50.flex.items-center.justify-center {
+    position: static !important;
+    background: transparent !important;
+    display: block !important;
+  }
+  /* Hide modal container styling */
+  .relative.bg-white.border.rounded-xl.shadow-2xl {
+    position: static !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+  /* Etiqueta containers - preserve  */
+  .bg-white.text-black.p-5.rounded-lg.border-2.border-black {
+    page-break-inside: avoid;
+    margin-bottom: 1cm;
   }
 }
 

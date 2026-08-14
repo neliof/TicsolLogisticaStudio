@@ -15,7 +15,7 @@ export const GS1LabelPrintModal: React.FC<GS1LabelPrintModalProps> = ({ pallet, 
   if (!pallet) return null;
 
   const handlePrint = () => {
-    window.print();
+    setTimeout(() => window.print(), 100);
   };
 
   return (
