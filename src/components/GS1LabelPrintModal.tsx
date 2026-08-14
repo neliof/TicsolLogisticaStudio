@@ -87,6 +87,7 @@ export const GS1LabelPrintModal: React.FC<GS1LabelPrintModalProps> = ({ pallet, 
         {/* Physical GS1 Label Container - Modo Único ou Individual */}
         {singleLabel || !packingListProducts ? (
           // Etiqueta única (packing list ou mono-produto)
+          <div className="label-print-area-wrapper">
           <div className="bg-white text-black p-5 rounded-lg border-2 border-black max-w-md mx-auto font-sans shadow-lg select-text text-left label-print-area">
             {/* Section 1: Header Logistics */}
             <div className="border-b-2 border-black pb-2 mb-2">
@@ -190,6 +191,7 @@ export const GS1LabelPrintModal: React.FC<GS1LabelPrintModalProps> = ({ pallet, 
                 SSCC: {pallet.sscc}
               </span>
             </div>
+          </div>
           </div>
         ) : (
           // Etiquetas individuais (uma por produto)

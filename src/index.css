@@ -42,59 +42,57 @@
 
 /* Print CSS for GS1-128 Logistic Labels & Receiving Slips */
 @media print {
-  /* Hide EVERYTHING by default */
-  * {
+  /* Hide EVERYTHING via visibility (display:none on ancestors would hide
+     descendants regardless of their own display value — visibility cascades
+     correctly and lets us re-show just the label subtree). */
+  body * {
+    visibility: hidden !important;
+  }
+
+  html, body {
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Re-show the wrapper and everything inside it (labels + barcodes) */
+  .label-print-area-wrapper,
+  .label-print-area-wrapper * {
+    visibility: visible !important;
+  }
+
+  /* But keep on-screen-only helper text (e.g. "ETIQUETA 1/3") hidden */
+  .label-print-area-wrapper .no-print {
     display: none !important;
   }
 
-  /* Show only what needs to print */
-  body {
-    display: block !important;
-    background: white !important;
-    margin: 0 !important;
-    padding: 0 !important;
+  /* Break the wrapper out of the modal's fixed/flex layout so invisible
+     ancestor boxes (header, buttons, backdrop padding) don't push it down
+     or off-page. This is the ONLY element positioned — everything below
+     it stays in normal flow so multiple etiquetas stack top-to-bottom. */
+  .label-print-area-wrapper {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
   }
 
-  /* Show etiqueta print areas only */
   .label-print-area {
-    display: block !important;
     background: white !important;
     color: black !important;
     border: 2px solid black !important;
-    padding: 1.25rem !important;
-    margin: 0 auto 0.5cm auto !important;
-    page-break-inside: avoid !important;
-    max-width: 105mm !important;
     box-shadow: none !important;
     border-radius: 0 !important;
+    margin: 0 auto 0.5cm auto !important;
+    max-width: 105mm !important;
+    page-break-inside: avoid;
+    page-break-after: always;
   }
 
-  .label-print-area * {
-    display: block !important;
-    background: transparent !important;
-    color: black !important;
-    box-shadow: none !important;
-    text-shadow: none !important;
-    margin-bottom: 0.25rem;
-  }
-
-  .label-print-area div {
-    display: block !important;
-  }
-
-  .label-print-area p {
-    display: block !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  .label-print-area span {
-    display: inline !important;
-  }
-
-  /* Wrapper for individual labels - keep scroll behavior removed */
-  .label-print-area-wrapper {
-    display: block !important;
+  .label-print-area:last-child {
+    page-break-after: auto;
   }
 }
 
