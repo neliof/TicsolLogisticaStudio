@@ -194,10 +194,10 @@ export const GS1LabelPrintModal: React.FC<GS1LabelPrintModalProps> = ({ pallet, 
           </div>
           </div>
         ) : (
-          // Etiquetas individuais (uma por produto)
-          <div className="space-y-4 max-h-96 overflow-y-auto label-print-area-wrapper">
+          // Etiquetas individuais (uma por produto) - scroll-snap: uma etiqueta completa de cada vez
+          <div className="space-y-4 max-h-[65vh] overflow-y-auto snap-y snap-mandatory scroll-pt-4 pr-1 label-print-area-wrapper">
             {packingListProducts.map((prod, idx) => (
-              <div key={idx} className="bg-white text-black p-5 rounded-lg border-2 border-black max-w-md mx-auto font-sans shadow-lg select-text text-left label-print-area">
+              <div key={idx} className="bg-white text-black p-5 rounded-lg border-2 border-black max-w-md mx-auto font-sans shadow-lg select-text text-left snap-start label-print-area">
                 {/* Título etiqueta individual */}
                 <div className="text-center mb-2 font-bold text-sm border-b-2 border-black pb-2 no-print">
                   ETIQUETA {idx + 1}/{packingListProducts.length}

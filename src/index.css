@@ -42,7 +42,14 @@
 
 /* Print CSS for GS1-128 Logistic Labels & Receiving Slips */
 @media print {
-  /* Hide EVERYTHING via visibility (display:none on ancestors would hide
+  /* Let the printer/paper picked in the OS print dialog decide the sheet
+     size (A4, A5, Zebra label roll, etc). No fixed size imposed here. */
+  @page {
+    size: auto;
+    margin: 5mm;
+  }
+
+  /* Hide EVERYTHING via visibility (display:none on ancestor would hide
      descendants regardless of their own display value — visibility cascades
      correctly and lets us re-show just the label subtree). */
   body * {
@@ -79,6 +86,8 @@
     overflow: visible !important;
   }
 
+  /* No fixed max-width/mm here — the label fills whatever paper size the
+     user picked in the printer dialog (A4, A5, Zebra 100x150mm, etc). */
   .label-print-area {
     background: white !important;
     color: black !important;
@@ -86,7 +95,8 @@
     box-shadow: none !important;
     border-radius: 0 !important;
     margin: 0 auto 0.5cm auto !important;
-    max-width: 105mm !important;
+    max-width: 100% !important;
+    width: 100% !important;
     page-break-inside: avoid;
     page-break-after: always;
   }
