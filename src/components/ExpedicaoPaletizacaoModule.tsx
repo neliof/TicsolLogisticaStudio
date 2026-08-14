@@ -47,6 +47,7 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
   // Label format selector
   type LabelFormat = 'A4' | 'A5' | 'Zebra4x6' | 'Zebra100x150';
   const [labelFormat, setLabelFormat] = useState<LabelFormat>('A4');
+  const [labelZoom, setLabelZoom] = useState(50);
 
   const labelFormats: Record<LabelFormat, { label: string; width: string; height: string; padding: string; textScale: number }> = {
     A4: { label: 'A4 (210x297mm)', width: 'w-full', height: 'min-h-[280mm]', padding: 'p-8', textScale: 1 },
@@ -257,23 +258,53 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
                 </button>
               </div>
 
-              {/* Format Selector */}
-              <div className="mb-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
-                <label className="text-sm font-semibold text-slate-700 block mb-2">Formato de Etiqueta:</label>
-                <div className="flex gap-2 flex-wrap">
-                  {Object.entries(labelFormats).map(([format, data]) => (
+              {/* Format + Zoom Controls */}
+              <div className="mb-4 space-y-3">
+                <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                  <label className="text-sm font-semibold text-slate-700 block mb-2">Formato de Etiqueta:</label>
+                  <div className="flex gap-2 flex-wrap">
+                    {Object.entries(labelFormats).map(([format, data]) => (
+                      <button
+                        key={format}
+                        onClick={() => setLabelFormat(format as LabelFormat)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                          labelFormat === format
+                            ? 'bg-purple-600 text-white border-2 border-purple-700'
+                            : 'bg-white text-slate-700 border-2 border-slate-300 hover:bg-slate-100'
+                        }`}
+                      >
+                        {data.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                  <label className="text-sm font-semibold text-slate-700 block mb-3">Zoom Pré-Visualização:</label>
+                  <div className="flex items-center gap-3">
                     <button
-                      key={format}
-                      onClick={() => setLabelFormat(format as LabelFormat)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                        labelFormat === format
-                          ? 'bg-purple-600 text-white border-2 border-purple-700'
-                          : 'bg-white text-slate-700 border-2 border-slate-300 hover:bg-slate-100'
-                      }`}
+                      onClick={() => setLabelZoom(Math.max(25, labelZoom - 10))}
+                      className="px-2 py-1 bg-slate-300 hover:bg-slate-400 rounded font-bold text-sm"
                     >
-                      {data.label}
+                      −
                     </button>
-                  ))}
+                    <input
+                      type="range"
+                      min="25"
+                      max="100"
+                      step="5"
+                      value={labelZoom}
+                      onChange={(e) => setLabelZoom(Number(e.target.value))}
+                      className="flex-1"
+                    />
+                    <button
+                      onClick={() => setLabelZoom(Math.min(100, labelZoom + 10))}
+                      className="px-2 py-1 bg-slate-300 hover:bg-slate-400 rounded font-bold text-sm"
+                    >
+                      +
+                    </button>
+                    <span className="text-sm font-mono font-bold text-slate-700 min-w-[45px] text-right">{labelZoom}%</span>
+                  </div>
                 </div>
               </div>
 
@@ -291,7 +322,7 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
                   ← Voltar
                 </button>
               </div>
-              <div className={`space-y-4 ${labelFormat !== 'A4' ? 'flex flex-wrap gap-4 justify-center' : ''}`}>
+              <div className={`space-y-4 ${labelFormat !== 'A4' ? 'flex flex-wrap gap-4 justify-center' : ''}`} style={{ transform: `scale(${labelZoom / 100})`, transformOrigin: 'top center' }}>
                 {printPalletList.map((pallet, idx) => (
                   <div key={idx} className={`bg-white text-black ${currentFormat.padding} rounded-lg border-2 border-black shadow-lg print:page-break-after-always ${currentFormat.height} ${currentFormat.width}`} style={{ fontSize: `${currentFormat.textScale * 16}px` }}>
                     <p className="text-center text-sm font-bold text-gray-600 mb-4">ETIQUETA LOGÍSTICA {idx + 1}/{printPalletList.length}</p>
