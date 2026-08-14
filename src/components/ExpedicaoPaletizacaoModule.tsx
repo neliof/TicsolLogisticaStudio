@@ -280,9 +280,15 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
               <div className="flex gap-4 mb-4">
                 <button
                   onClick={() => window.print()}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg shadow-sm"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-sm"
                 >
                   🖨️ Imprimir {printPalletList.length} Etiquetas ({labelFormat})
+                </button>
+                <button
+                  onClick={() => setPrintPalletList([])}
+                  className="px-4 py-2 bg-slate-300 hover:bg-slate-400 text-slate-900 font-semibold rounded-lg shadow-sm"
+                >
+                  ← Voltar
                 </button>
               </div>
               <div className={`space-y-4 ${labelFormat !== 'A4' ? 'flex flex-wrap gap-4 justify-center' : ''}`}>
