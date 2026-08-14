@@ -42,12 +42,11 @@
 
 /* Print CSS for GS1-128 Logistic Labels & Receiving Slips */
 @media print {
-  /* Paper size comes from the OS print dialog (A4, A5, Zebra label roll…).
-     margin:0 removes the printer's default white border so the etiqueta
-     can bleed to the full sheet. */
+  /* Let the printer/paper picked in the OS print dialog decide the sheet
+     size (A4, A5, Zebra label roll, etc). No fixed size imposed here. */
   @page {
     size: auto;
-    margin: 0;
+    margin: 5mm;
   }
 
   /* Hide EVERYTHING via visibility (display:none on ancestor would hide
@@ -85,50 +84,25 @@
     width: 100% !important;
     max-height: none !important;
     overflow: visible !important;
-    /* kill the on-screen gap between stacked etiquetas — each one is now
-       a full page of its own, any extra margin would spill onto a blank sheet */
-    margin: 0 !important;
-    padding: 0 !important;
   }
 
-  .label-print-area-wrapper > * + * {
-    margin-top: 0 !important;
-  }
-
-  /* One etiqueta = one full sheet. No max-width in mm: it fills whatever
-     paper the user picked (A4, A5, Zebra 100x150mm autocolante…).
-     100vw/100vh in print context = the page box, which @page margin:0
-     made equal to the full physical sheet. */
+  /* No fixed max-width/mm here — the label fills whatever paper size the
+     user picked in the printer dialog (A4, A5, Zebra 100x150mm, etc). */
   .label-print-area {
     background: white !important;
     color: black !important;
-    border: none !important;
+    border: 2px solid black !important;
     box-shadow: none !important;
     border-radius: 0 !important;
-    margin: 0 !important;
-    padding: 4mm !important;
-    max-width: none !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    box-sizing: border-box !important;
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: space-between !important;
+    margin: 0 auto 0.5cm auto !important;
+    max-width: 100% !important;
+    width: 100% !important;
     page-break-inside: avoid;
     page-break-after: always;
   }
 
   .label-print-area:last-child {
     page-break-after: auto;
-  }
-
-  /* Let the barcodes scale up with the extra room on bigger sheets
-     instead of staying pinned at their on-screen pixel size. */
-  .label-print-area svg,
-  .label-print-area img {
-    width: 100% !important;
-    height: auto !important;
-    max-height: 30vh !important;
   }
 }
 
