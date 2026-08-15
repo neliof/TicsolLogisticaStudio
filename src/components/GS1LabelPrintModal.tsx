@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { PalletSSCC } from '../types/wms';
 import { BarcodeRenderer } from './BarcodeRenderer';
-import { X, Printer, CheckCircle2, ShieldCheck, Tag } from 'lucide-react';
+import { X, Printer, ShieldCheck, Tag, Copy, Check, FileText, Layers } from 'lucide-react';
 
 interface GS1LabelPrintModalProps {
   pallet: PalletSSCC | null;
@@ -11,11 +11,30 @@ interface GS1LabelPrintModalProps {
 
 export const GS1LabelPrintModal: React.FC<GS1LabelPrintModalProps> = ({ pallet, onClose, packingListProducts }) => {
   const [singleLabel, setSingleLabel] = useState(true);
+  const [paperFormat, setPaperFormat] = useState<'zebra' | 'a5' | 'a4'>('zebra');
+  const [copiesCount, setCopiesCount] = useState<1 | 2>(1);
+  const [copied, setCopied] = useState(false);
 
   if (!pallet) return null;
 
   const handlePrint = () => {
     setTimeout(() => window.print(), 100);
+  };
+
+  const handleCopySSCC = () => {
+    if (pallet?.sscc) {
+      navigator.clipboard.writeText(pallet.sscc);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const formatSSCCHuman = (sscc: string) => {
+    const clean = sscc.replace(/\D/g, '');
+    if (clean.length === 18) {
+      return `(00) ${clean.slice(0, 1)} ${clean.slice(1, 8)} ${clean.slice(8, 17)} ${clean.slice(17)}`;
+    }
+    return `(00) ${sscc}`;
   };
 
   return (
