@@ -61,16 +61,26 @@ export const GS1LabelPrintModal: React.FC<GS1LabelPrintModalProps> = ({ pallet, 
 
         {/* Action Buttons */}
         <div className="flex items-center justify-between mb-6 bg-slate-50 p-3 rounded-lg border border-slate-200 no-print">
-          <div className="flex items-center gap-2 text-xs text-emerald-700 font-semibold">
-            <ShieldCheck className="w-4 h-4" />
-            Validação GS1 Modulo-10 Aprovada
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleCopySSCC}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold transition-all cursor-pointer"
+            >
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
+              {copied ? 'SSCC Copiado!' : 'Copiar SSCC'}
+            </button>
+            <span className="text-slate-300">|</span>
+            <div className="flex items-center gap-1 text-xs text-emerald-700 font-medium">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              GS1-128 OK
+            </div>
           </div>
           <button
             onClick={handlePrint}
             className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg shadow-sm transition-all text-sm cursor-pointer"
           >
             <Printer className="w-4 h-4 text-amber-400" />
-            Imprimir Etiqueta{!singleLabel && packingListProducts ? `s (${packingListProducts.length})` : ''}
+            Imprimir Etiqueta{!singleLabel && packingListProducts ? `s (${packingListProducts.length * copiesCount})` : copiesCount > 1 ? ` (2 Lados)` : ''}
           </button>
         </div>
 
@@ -102,6 +112,85 @@ export const GS1LabelPrintModal: React.FC<GS1LabelPrintModalProps> = ({ pallet, 
             </div>
           </div>
         )}
+
+        {/* Paper Format & Copies Configuration */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6 bg-blue-50/60 p-3.5 rounded-lg border border-blue-100 text-xs no-print">
+          {/* Paper Format Buttons */}
+          <div>
+            <label className="font-semibold text-slate-700 block mb-1.5 flex items-center gap-1.5">
+              <FileText className="w-3.5 h-3.5 text-blue-600" />
+              Formato / Impressora:
+            </label>
+            <div className="grid grid-cols-3 gap-1.5">
+              <button
+                type="button"
+                onClick={() => setPaperFormat('zebra')}
+                className={`py-1.5 px-2 rounded-lg font-medium text-center transition-all cursor-pointer ${
+                  paperFormat === 'zebra'
+                    ? 'bg-blue-600 text-white font-bold shadow-xs'
+                    : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                }`}
+              >
+                Zebra
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaperFormat('a5')}
+                className={`py-1.5 px-2 rounded-lg font-medium text-center transition-all cursor-pointer ${
+                  paperFormat === 'a5'
+                    ? 'bg-blue-600 text-white font-bold shadow-xs'
+                    : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                }`}
+              >
+                A5
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaperFormat('a4')}
+                className={`py-1.5 px-2 rounded-lg font-medium text-center transition-all cursor-pointer ${
+                  paperFormat === 'a4'
+                    ? 'bg-blue-600 text-white font-bold shadow-xs'
+                    : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                }`}
+              >
+                A4
+              </button>
+            </div>
+          </div>
+
+          {/* Copies per Pallet - GS1 B2B Standard */}
+          <div>
+            <label className="font-semibold text-slate-700 block mb-1.5 flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5 text-blue-600" />
+              Cópias por Palete:
+            </label>
+            <div className="grid grid-cols-2 gap-1.5">
+              <button
+                type="button"
+                onClick={() => setCopiesCount(1)}
+                className={`py-1.5 px-2 rounded-lg font-medium text-center transition-all cursor-pointer ${
+                  copiesCount === 1
+                    ? 'bg-blue-600 text-white font-bold shadow-xs'
+                    : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                }`}
+              >
+                1 Cópia
+              </button>
+              <button
+                type="button"
+                onClick={() => setCopiesCount(2)}
+                className={`py-1.5 px-2 rounded-lg font-medium text-center transition-all cursor-pointer ${
+                  copiesCount === 2
+                    ? 'bg-blue-600 text-white font-bold shadow-xs'
+                    : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                }`}
+                title="2 etiquetas (Frente + Lateral) conforme padrão GS1 B2B"
+              >
+                2 Cópias
+              </button>
+            </div>
+          </div>
+        </div>
 
         {/* Physical GS1 Label Container - Modo Único ou Individual */}
         {singleLabel || !packingListProducts ? (
