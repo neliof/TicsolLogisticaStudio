@@ -115,4 +115,38 @@
   animation: laser-scan 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+/* Paper Format Media Queries for Dynamic Print Sizing */
+.print-paper-zebra .label-print-area {
+  width: 98mm !important;
+  max-width: 98mm !important;
+  padding: 3mm !important;
+  margin: 0 auto !important;
+}
+
+.print-paper-a5 .label-print-area {
+  width: 138mm !important;
+  max-width: 138mm !important;
+  padding: 5mm !important;
+  margin: 0 auto !important;
+}
+
+.print-paper-a4 .label-print-area {
+  width: 185mm !important;
+  max-width: 185mm !important;
+  padding: 6mm !important;
+  margin: 0 auto !important;
+}
+
+/* Print media adjustments */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .label-print-area {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
+
 
