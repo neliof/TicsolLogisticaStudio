@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { PalletSSCC } from '../types/wms';
 import { BarcodeRenderer } from './BarcodeRenderer';
-import { X, Printer, CheckCircle2, ShieldCheck, Tag } from 'lucide-react';
+import { X, Printer, ShieldCheck, Tag, Copy, Check, FileText, Layers } from 'lucide-react';
 
 interface GS1LabelPrintModalProps {
   pallet: PalletSSCC | null;
@@ -11,6 +11,9 @@ interface GS1LabelPrintModalProps {
 
 export const GS1LabelPrintModal: React.FC<GS1LabelPrintModalProps> = ({ pallet, onClose, packingListProducts }) => {
   const [singleLabel, setSingleLabel] = useState(true);
+  const [paperFormat, setPaperFormat] = useState<'zebra' | 'a5' | 'a4'>('zebra');
+  const [copiesCount, setCopiesCount] = useState<1 | 2>(1);
+  const [copied, setCopied] = useState(false);
 
   if (!pallet) return null;
 
@@ -18,77 +21,195 @@ export const GS1LabelPrintModal: React.FC<GS1LabelPrintModalProps> = ({ pallet, 
     setTimeout(() => window.print(), 100);
   };
 
+  const handleCopySSCC = () => {
+    if (pallet?.sscc) {
+      navigator.clipboard.writeText(pallet.sscc);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const formatSSCCHuman = (sscc: string) => {
+    const clean = sscc.replace(/\D/g, '');
+    if (clean.length === 18) {
+      return `(00) ${clean.slice(0, 1)} ${clean.slice(1, 8)} ${clean.slice(8, 17)} ${clean.slice(17)}`;
+    }
+    return `(00) ${sscc}`;
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto modal-backdrop">
-      <div className="relative bg-white border border-slate-200 rounded-xl shadow-2xl max-w-2xl w-full p-6 text-slate-900 my-8 modal-container">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-md p-3 md:p-6 overflow-y-auto modal-backdrop">
+      <div className={`relative bg-white border border-slate-200 rounded-2xl shadow-2xl max-w-3xl w-full p-5 text-slate-900 my-4 modal-container print-paper-${paperFormat}`}>
         {/* Header bar */}
-        <div className="flex items-center justify-between border-b border-slate-200 pb-4 mb-4 no-print">
+        <div className="flex items-center justify-between border-b border-slate-200 pb-3 mb-4 no-print">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg border border-blue-100">
+            <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl border border-blue-100">
               <Tag className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-semibold text-lg text-slate-900">Etiqueta Logística GS1-128 (SSCC)</h3>
-              <p className="text-xs text-slate-500 font-mono">Formato Standard A5 (105mm x 148mm) • Regra {pallet.regrac_cliente_aplicada}</p>
+              <h3 className="font-bold text-lg text-slate-900 leading-tight">Etiqueta Logística GS1-128 (SSCC)</h3>
+              <p className="text-xs text-slate-500 font-mono mt-0.5">
+                Validação Módulo-10 Aprovada • Regra do Cliente: <span className="font-semibold text-slate-700">{pallet.regrac_cliente_aplicada}</span>
+              </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+            className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+            title="Fechar"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex items-center justify-between mb-6 bg-slate-50 p-3 rounded-lg border border-slate-200 no-print">
-          <div className="flex items-center gap-2 text-xs text-emerald-700 font-semibold">
-            <ShieldCheck className="w-4 h-4" />
-            Validação GS1 Modulo-10 Aprovada
-          </div>
-          <button
-            onClick={handlePrint}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg shadow-sm transition-all text-sm cursor-pointer"
-          >
-            <Printer className="w-4 h-4 text-amber-400" />
-            Imprimir Etiqueta{!singleLabel && packingListProducts ? `s (${packingListProducts.length})` : ''}
-          </button>
-        </div>
+        {/* Bar de Ações & Configuração de Impressão */}
+        <div className="space-y-3 mb-5 no-print">
+          {/* Top Control Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleCopySSCC}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold shadow-xs transition-all cursor-pointer"
+              >
+                {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
+                {copied ? 'SSCC Copiado!' : 'Copiar SSCC'}
+              </button>
 
-        {/* Modo Impressão - Único vs Individual */}
-        {packingListProducts && packingListProducts.length > 1 && (
-          <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200 no-print">
-            <label className="text-sm font-semibold text-slate-700 block mb-2">Modo Impressão:</label>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setSingleLabel(true)}
-                className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm transition-all ${
-                  singleLabel
-                    ? 'bg-blue-600 text-white border-2 border-blue-700'
-                    : 'bg-white text-slate-700 border-2 border-slate-300 hover:bg-slate-100'
-                }`}
-              >
-                Única (Packing List)
-              </button>
-              <button
-                onClick={() => setSingleLabel(false)}
-                className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm transition-all ${
-                  !singleLabel
-                    ? 'bg-blue-600 text-white border-2 border-blue-700'
-                    : 'bg-white text-slate-700 border-2 border-slate-300 hover:bg-slate-100'
-                }`}
-              >
-                Individuais ({packingListProducts.length} etiquetas)
-              </button>
+              <span className="text-xs text-slate-400">|</span>
+
+              <div className="flex items-center gap-1 text-xs text-emerald-700 font-medium bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-100">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                Norma GS1-128
+              </div>
+            </div>
+
+            <button
+              onClick={handlePrint}
+              className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 active:scale-95 text-white font-semibold rounded-xl shadow-md transition-all text-sm cursor-pointer ml-auto"
+            >
+              <Printer className="w-4 h-4 text-amber-400" />
+              <span>Imprimir Etiqueta{!singleLabel && packingListProducts ? `s (${packingListProducts.length * copiesCount})` : copiesCount > 1 ? ` (2 Lados)` : ''}</span>
+            </button>
+          </div>
+
+          {/* Selector de Perfil de Impressora / Papel + Duplicação GS1 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-blue-50/60 p-3.5 rounded-xl border border-blue-100 text-xs">
+            {/* Papel */}
+            <div>
+              <label className="font-semibold text-slate-700 block mb-1.5 flex items-center gap-1.5">
+                <FileText className="w-3.5 h-3.5 text-blue-600" />
+                Formato / Impressora:
+              </label>
+              <div className="grid grid-cols-3 gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setPaperFormat('zebra')}
+                  className={`py-1.5 px-2 rounded-lg font-medium text-center transition-all cursor-pointer ${
+                    paperFormat === 'zebra'
+                      ? 'bg-blue-600 text-white font-bold shadow-xs'
+                      : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  Zebra 100x150
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaperFormat('a5')}
+                  className={`py-1.5 px-2 rounded-lg font-medium text-center transition-all cursor-pointer ${
+                    paperFormat === 'a5'
+                      ? 'bg-blue-600 text-white font-bold shadow-xs'
+                      : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  Folha A5
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaperFormat('a4')}
+                  className={`py-1.5 px-2 rounded-lg font-medium text-center transition-all cursor-pointer ${
+                    paperFormat === 'a4'
+                      ? 'bg-blue-600 text-white font-bold shadow-xs'
+                      : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  Folha A4
+                </button>
+              </div>
+            </div>
+
+            {/* Cópias por Palete */}
+            <div>
+              <label className="font-semibold text-slate-700 block mb-1.5 flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-blue-600" />
+                Aposição por Palete (Norma GS1 B2B):
+              </label>
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setCopiesCount(1)}
+                  className={`py-1.5 px-2 rounded-lg font-medium text-center transition-all cursor-pointer ${
+                    copiesCount === 1
+                      ? 'bg-blue-600 text-white font-bold shadow-xs'
+                      : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  1 Cópia
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCopiesCount(2)}
+                  className={`py-1.5 px-2 rounded-lg font-medium text-center transition-all cursor-pointer ${
+                    copiesCount === 2
+                      ? 'bg-blue-600 text-white font-bold shadow-xs'
+                      : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                  }`}
+                  title="2 Etiquetas (Frente + Lateral) por palete conforme recomendação B2B GS1"
+                >
+                  2 Cópias (Frente + Lateral)
+                </button>
+              </div>
             </div>
           </div>
-        )}
 
-        {/* Physical GS1 Label Container - Modo Único ou Individual */}
-        {singleLabel || !packingListProducts ? (
-          // Etiqueta única (packing list ou mono-produto)
-          <div className="label-print-area-wrapper">
-          <div className="bg-white text-black p-5 rounded-lg border-2 border-black max-w-md mx-auto font-sans shadow-lg select-text text-left label-print-area">
+          {/* Modo Impressão - Único vs Individual para Packing List */}
+          {packingListProducts && packingListProducts.length > 1 && (
+            <div className="p-3 bg-amber-50 rounded-xl border border-amber-200">
+              <label className="text-xs font-semibold text-amber-900 block mb-1.5">Modo de Packing List:</label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSingleLabel(true)}
+                  className={`flex-1 py-1.5 px-3 rounded-lg font-semibold text-xs transition-all cursor-pointer ${
+                    singleLabel
+                      ? 'bg-amber-600 text-white shadow-xs'
+                      : 'bg-white text-slate-700 border border-amber-200 hover:bg-amber-100/50'
+                  }`}
+                >
+                  Etiqueta Consolidada (Packing List)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSingleLabel(false)}
+                  className={`flex-1 py-1.5 px-3 rounded-lg font-semibold text-xs transition-all cursor-pointer ${
+                    !singleLabel
+                      ? 'bg-amber-600 text-white shadow-xs'
+                      : 'bg-white text-slate-700 border border-amber-200 hover:bg-amber-100/50'
+                  }`}
+                >
+                  Etiquetas Individuais ({packingListProducts.length} itens)
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* PREVIEW CONTAINER - Renderização da Etiqueta Reorganizada GS1-128 */}
+        <div className="label-print-area-wrapper max-h-[62vh] overflow-y-auto pr-1">
+          {Array.from({ length: copiesCount }).map((_, copyIndex) => (
+            <React.Fragment key={`copy-${copyIndex}`}>
+              {singleLabel || !packingListProducts ? (
+                // ETIQUETA GS1-128 PRINCIPAL / CONSOLIDADA
+                <div className="bg-white text-black p-5 border-2 border-black max-w-md mx-auto font-sans shadow-lg select-text text-left label-print-area my-2 relative">
             {/* Section 1: Header Logistics */}
             <div className="border-b-2 border-black pb-2 mb-2">
               <div className="flex justify-between items-start text-[10px] font-bold tracking-tight">
@@ -264,9 +385,10 @@ export const GS1LabelPrintModal: React.FC<GS1LabelPrintModalProps> = ({ pallet, 
           </div>
         )}
 
-        {/* Footer info */}
-        <div className="mt-4 text-center text-xs text-slate-500 no-print">
-          Operador: {pallet.operador} • Data de Criação: {pallet.data_criacao}
+        {/* Footer Info */}
+        <div className="mt-3 text-center text-xs text-slate-500 no-print flex justify-between items-center px-2">
+          <span>Regra de Cliente: <strong className="text-slate-700">{pallet.regrac_cliente_aplicada}</strong></span>
+          <span>Operador: <strong className="text-slate-700">{pallet.operador}</strong></span>
         </div>
       </div>
     </div>
