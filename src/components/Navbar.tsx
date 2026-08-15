@@ -29,9 +29,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenScanner
 }) => {
   const tabs: { id: AppTab; label: string; icon: React.ReactNode; badge?: string }[] = [
-    { id: 'rececao', label: 'Ecrã de Receção', icon: <Truck className="w-4 h-4" />, badge: '3 Guias' },
-    { id: 'expedicao', label: 'Expedição', icon: <Radio className="w-4 h-4" />, badge: 'Imefar' },
+    { id: 'rececao', label: 'Receção', icon: <Building2 className="w-4 h-4" />, badge: '3 Guias' },
     { id: 'paletizacao', label: 'Paletização Receção', icon: <Boxes className="w-4 h-4" />, badge: 'SSCC GS1' },
+    { id: 'expedicao', label: 'Expedição', icon: <Truck className="w-4 h-4" />, badge: 'Imefar' },
     { id: 'paletizacao_expedicao', label: 'Paletização Expedição', icon: <Layers className="w-4 h-4" />, badge: 'Auto' },
     { id: 'stock_mapa', label: 'Stock & Mapa', icon: <Layers className="w-4 h-4" /> },
     { id: 'artsoft_sync', label: 'Sync ARTSOFT', icon: <RefreshCw className="w-4 h-4" />, badge: 'ERP' },
