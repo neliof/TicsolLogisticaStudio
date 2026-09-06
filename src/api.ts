@@ -171,6 +171,10 @@ export const api = {
     return pedir<LinhaReconciliacao[]>(`/rest/v1/vw_reconciliacao_stock?limit=${limite}`);
   },
 
+  paletes(limite = 500) {
+    return pedir<any[]>(`/rest/v1/palete?limit=${limite}`);
+  },
+
   sincronizarStock() {
     return pedir<{ gravados: number; nao_resolvidos: number; produtos: number }>(
       '/api/artsoft/stock/sync',

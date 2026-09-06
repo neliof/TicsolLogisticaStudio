@@ -1,11 +1,49 @@
 import { useEffect, useState } from 'react';
 import { GuiaTransporte, PaletaExpedicao, ComprovanteEmbarque } from '../types/expedicao';
-import { INITIAL_GUIAS_TRANSPORTE, INITIAL_PALETAS_EXPEDICAO, INITIAL_COMPROVANTES_EMBARQUE } from '../data/mockExpedicao';
+import { api } from '../api';
+
+/**
+ * Mapeia um documento ARTSOFT (guia de transporte) para GuiaTransporte, ao
+ * nível do cabeçalho. As linhas ficam vazias de propósito: carregá-las seria
+ * uma chamada por guia (N+1). O detalhe de linhas é obtido só quando uma guia
+ * é aberta, não no carregamento da lista.
+ */
+function docParaGuia(d: any): GuiaTransporte {
+  const x =
+    typeof d.conteudo_xml === 'string'
+      ? (() => {
+          try {
+            return JSON.parse(d.conteudo_xml);
+          } catch {
+            return {};
+          }
+        })()
+      : d.conteudo_xml || {};
+
+  return {
+    id: d.id,
+    numero_guia: d.numero || d.origem_doc_id || '',
+    cliente_nome: x.terceiro_nome || '',
+    cliente_nif: x.terceiro_nif || '',
+    morada_entrega: x.morada_descarga || '',
+    cidade_entrega: '',
+    codigo_postal_entrega: '',
+    data_entrega_prevista: d.data_emissao || '',
+    artsoft_order_id: x.pedido_origem || d.origem_doc_id || '',
+    linhas: [],
+    peso_total_estimado_kg: 0,
+    volume_total_estimado_m3: 0,
+    status: 'RECEBIDA',
+    data_criacao: d.data_emissao || '',
+    prioridade: 'NORMAL',
+  };
+}
 
 export function useExpedicaoData() {
-  const [guias, setGuias] = useState<GuiaTransporte[]>(INITIAL_GUIAS_TRANSPORTE);
-  const [paletas, setPaletas] = useState<PaletaExpedicao[]>(INITIAL_PALETAS_EXPEDICAO);
-  const [comprovantes, setComprovantes] = useState<ComprovanteEmbarque[]>(INITIAL_COMPROVANTES_EMBARQUE);
+  const [guias, setGuias] = useState<GuiaTransporte[]>([]);
+  // Sem tabelas próprias ainda: preenchidas pelo fluxo de expedição do WMS.
+  const [paletas, setPaletas] = useState<PaletaExpedicao[]>([]);
+  const [comprovantes, setComprovantes] = useState<ComprovanteEmbarque[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -13,42 +51,29 @@ export function useExpedicaoData() {
     const loadData = async () => {
       try {
         setLoading(true);
-
-        // Tenta buscar dados reais da API; fallback para mock
-        const endpoints = [
-          { url: 'http://localhost:3000/rest/v1/guia_transporte', setState: setGuias },
-          { url: 'http://localhost:3000/rest/v1/palete_expedicao', setState: setPaletas },
-          { url: 'http://localhost:3000/rest/v1/comprovante_embarque', setState: setComprovantes }
-        ];
-
-        for (const endpoint of endpoints) {
-          try {
-            const res = await fetch(endpoint.url);
-            if (res.ok) {
-              const data = await res.json();
-              if (Array.isArray(data) && data.length > 0) {
-                endpoint.setState(data);
-              }
-            }
-          } catch (e) {
-            console.warn(`Endpoint ${endpoint.url} offline, usando mock`);
-          }
-        }
-
+        const docs = await api.listarDocumentos(300);
+        setGuias(docs.map(docParaGuia));
         setError(null);
       } catch (err) {
-        console.warn('Expedição API offline, usando mock data');
-        setError('Usando dados simulação (API offline)');
+        setError(err instanceof Error ? err.message : 'Falha ao carregar guias de expedição.');
       } finally {
         setLoading(false);
       }
     };
 
     loadData();
-    // Poll a cada 30 segundos
     const interval = setInterval(loadData, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  return { pedidos: guias, paletas, guias: comprovantes, loading, error, setPedidos: setGuias, setPaletas, setGuias: setComprovantes };
+  return {
+    pedidos: guias,
+    paletas,
+    guias: comprovantes,
+    loading,
+    error,
+    setPedidos: setGuias,
+    setPaletas,
+    setGuias: setComprovantes,
+  };
 }
