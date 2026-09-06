@@ -175,6 +175,10 @@ export const api = {
     return pedir<any[]>(`/rest/v1/palete?limit=${limite}`);
   },
 
+  regras(limite = 100) {
+    return pedir<any[]>(`/rest/v1/regra_logistica?limit=${limite}`);
+  },
+
   sincronizarStock() {
     return pedir<{ gravados: number; nao_resolvidos: number; produtos: number }>(
       '/api/artsoft/stock/sync',

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { AppTab, ReceivingOrder, PalletSSCC, StockPosition, RuleConfig, AuditLog } from './types/wms';
 import {
-  INITIAL_RULE_CONFIGS,
   INITIAL_AUDIT_LOGS,
   INITIAL_LOCATIONS
 } from './data/mockData';
 import { lerSessao, terminarSessao, Utilizador } from './api';
+import { useRegras } from './hooks/useRegras';
 import { Entrar } from './components/Entrar';
 import { Navbar } from './components/Navbar';
 import { RececaoModule } from './components/RececaoModule';
@@ -52,7 +52,7 @@ function AppAutenticada({
 
   // WMS Main State Collections — Real data from API + fallback to mock
   const { orders, pallets, stock: stockList, loading: wmsLoading, error: wmsError, setOrders, setPallets, setStock: setStockList } = useWMSData();
-  const [rules, setRules] = useState<RuleConfig[]>(INITIAL_RULE_CONFIGS);
+  const { rules, setRules } = useRegras();
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(INITIAL_AUDIT_LOGS);
   const [locations] = useState(INITIAL_LOCATIONS);
 
