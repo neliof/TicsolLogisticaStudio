@@ -1,6 +1,26 @@
-import { useEffect, useState } from 'react';
-import { GuiaTransporte, PaletaExpedicao, ComprovanteEmbarque } from '../types/expedicao';
+import { useCallback, useEffect, useState } from 'react';
+import { GuiaTransporte, LinhaGuia, PaletaExpedicao, ComprovanteEmbarque } from '../types/expedicao';
 import { api } from '../api';
+
+/** Mapeia uma linha_documento do ARTSOFT para LinhaGuia. */
+function linhaDocParaLinhaGuia(l: any, guiaId: string): LinhaGuia {
+  const extra = l.dados_extra || {};
+  return {
+    id: `${guiaId}-${l.nr_linha ?? l.id}`,
+    guia_id: guiaId,
+    artigo_codigo: l.artigo_codigo || '',
+    artigo_descricao: l.descricao || '',
+    ean_barcode: extra.ean13 || '',
+    quantidade_solicitada: Number(l.quantidade) || 0,
+    lote: '',
+    data_validade: '',
+    temperatura_armazenamento: 'AMBIENTE',
+    requer_palote_separada: false,
+    peso_unitario_kg: Number(extra.peso) || 0,
+    volume_unitario_m3: 0,
+    status: 'PENDENTE',
+  };
+}
 
 /**
  * Mapeia um documento ARTSOFT (guia de transporte) para GuiaTransporte, ao
@@ -66,8 +86,29 @@ export function useExpedicaoData() {
     return () => clearInterval(interval);
   }, []);
 
+  // Carrega as linhas de uma guia só quando é preciso (ao abri-la). Guias já
+  // com linhas não voltam a ser pedidas.
+  const carregarLinhas = useCallback(
+    async (guiaId: string) => {
+      const guia = guias.find((g) => g.id === guiaId);
+      if (!guia || guia.linhas.length > 0) return;
+      try {
+        const linhas = await api.listarLinhasDoDocumento(guiaId);
+        setGuias((prev) =>
+          prev.map((g) =>
+            g.id === guiaId ? { ...g, linhas: linhas.map((l) => linhaDocParaLinhaGuia(l, guiaId)) } : g
+          )
+        );
+      } catch {
+        // Sem detalhe de linhas: a guia fica com a lista vazia, sem quebrar o ecrã.
+      }
+    },
+    [guias]
+  );
+
   return {
     pedidos: guias,
+    carregarLinhas,
     paletas,
     guias: comprovantes,
     loading,

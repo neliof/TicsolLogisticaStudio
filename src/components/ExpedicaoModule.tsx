@@ -20,6 +20,7 @@ interface ExpedicaoModuleProps {
   comprovantes: ComprovanteEmbarque[];
   onConfirmGuia: (guiaId: string) => void;
   onCreateEmbarque: (comprovante: ComprovanteEmbarque) => void;
+  onSelectGuia?: (guiaId: string) => void;
 }
 
 export const ExpedicaoModule: React.FC<ExpedicaoModuleProps> = ({
@@ -27,13 +28,19 @@ export const ExpedicaoModule: React.FC<ExpedicaoModuleProps> = ({
   paletas,
   comprovantes,
   onConfirmGuia,
-  onCreateEmbarque
+  onCreateEmbarque,
+  onSelectGuia
 }) => {
   const [selectedGuiaId, setSelectedGuiaId] = useState<string>(guias[0]?.id || '');
   const [showEmbarqueForm, setShowEmbarqueForm] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('TODOS');
 
   const selectedGuia = guias.find(g => g.id === selectedGuiaId) || guias[0];
+
+  // Carrega as linhas da guia aberta (a lista traz só cabeçalhos).
+  React.useEffect(() => {
+    if (selectedGuia && onSelectGuia) onSelectGuia(selectedGuia.id);
+  }, [selectedGuia?.id, onSelectGuia]);
   const guiaPaletas = selectedGuia ? paletas.filter(p => p.guia_id === selectedGuia.id) : [];
 
   const filteredGuias = statusFilter === 'TODOS' ? guias : guias.filter(g => g.status === statusFilter);

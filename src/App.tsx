@@ -57,7 +57,7 @@ function AppAutenticada({
   const [locations] = useState(INITIAL_LOCATIONS);
 
   // Expedição State — Imefar distribui para clientes via Guias de Transporte (ARTSOFT)
-  const { pedidos: guiasEntrada, paletas: paletasExpedicao, guias: comprovantesEmbarque, loading: expedicaoLoading, error: expedicaoError, setPedidos: setGuiasEntrada, setPaletas: setPaletasExpedicao, setGuias: setComprovantesEmbarque } = useExpedicaoData();
+  const { pedidos: guiasEntrada, paletas: paletasExpedicao, guias: comprovantesEmbarque, loading: expedicaoLoading, error: expedicaoError, setPedidos: setGuiasEntrada, setPaletas: setPaletasExpedicao, setGuias: setComprovantesEmbarque, carregarLinhas } = useExpedicaoData();
 
   // Scanner & Navigation Helpers
   const [isScannerOpen, setIsScannerOpen] = useState<boolean>(false);
@@ -345,6 +345,7 @@ function AppAutenticada({
             comprovantes={comprovantesEmbarque}
             onConfirmGuia={handleConfirmGuiaPaletizacao}
             onCreateEmbarque={handleCreateEmbarque}
+            onSelectGuia={carregarLinhas}
           />
         )}
 
