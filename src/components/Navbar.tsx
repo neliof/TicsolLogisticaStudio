@@ -9,8 +9,9 @@ import {
   ShieldAlert, 
   Scan, 
   Building2, 
-  Database, 
-  Radio
+  Database,
+  Radio,
+  LogOut
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -19,6 +20,8 @@ interface NavbarProps {
   selectedTenant: string;
   setSelectedTenant: (tenant: string) => void;
   onOpenScanner: () => void;
+  nomeUtilizador: string;
+  aoSair: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -26,7 +29,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   setActiveTab,
   selectedTenant,
   setSelectedTenant,
-  onOpenScanner
+  onOpenScanner,
+  nomeUtilizador,
+  aoSair
 }) => {
   const tabs: { id: AppTab; label: string; icon: React.ReactNode; badge?: string }[] = [
     { id: 'rececao', label: 'Receção', icon: <Building2 className="w-4 h-4" />, badge: '3 Guias' },
@@ -112,6 +117,19 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Scan className="w-3.5 h-3.5" />
               <span className="hidden md:inline">Scanner PDA</span>
             </button>
+
+            {/* Sessão */}
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-slate-300 hidden lg:inline">{nomeUtilizador}</span>
+              <button
+                onClick={aoSair}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold rounded-lg transition-all"
+                title="Terminar sessão"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">Sair</span>
+              </button>
+            </div>
           </div>
         </div>
 

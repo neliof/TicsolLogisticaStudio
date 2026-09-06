@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { AppTab, ReceivingOrder, PalletSSCC, StockPosition, RuleConfig, AuditLog, ArtsoftStockDivergence } from './types/wms';
+import { AppTab, ReceivingOrder, PalletSSCC, StockPosition, RuleConfig, AuditLog } from './types/wms';
 import {
-  INITIAL_ARTSOFT_DIVERGENCES,
   INITIAL_RULE_CONFIGS,
   INITIAL_AUDIT_LOGS,
   INITIAL_LOCATIONS
 } from './data/mockData';
+import { lerSessao, terminarSessao, Utilizador } from './api';
+import { Entrar } from './components/Entrar';
 import { Navbar } from './components/Navbar';
 import { RececaoModule } from './components/RececaoModule';
 import { PaletizacaoModule } from './components/PaletizacaoModule';
@@ -21,12 +22,36 @@ import { useExpedicaoData } from './hooks/useExpedicaoData';
 import { GuiaTransporte, PaletaExpedicao, ChecklistExpedicao, ComprovanteEmbarque } from './types/expedicao';
 
 export default function App() {
+  const [utilizador, setUtilizador] = useState<Utilizador | null>(lerSessao()?.utilizador ?? null);
+
+  if (!utilizador) {
+    return <Entrar aoEntrar={setUtilizador} />;
+  }
+
+  // Montado apenas com sessão activa, para que nenhum pedido saia sem token.
+  return (
+    <AppAutenticada
+      utilizador={utilizador}
+      aoSair={() => {
+        terminarSessao();
+        setUtilizador(null);
+      }}
+    />
+  );
+}
+
+function AppAutenticada({
+  utilizador,
+  aoSair
+}: {
+  utilizador: Utilizador;
+  aoSair: () => void;
+}) {
   const [activeTab, setActiveTab] = useState<AppTab>('rececao');
   const [selectedTenant, setSelectedTenant] = useState<string>('TicSol_HuB (Sonae MC)');
 
   // WMS Main State Collections — Real data from API + fallback to mock
   const { orders, pallets, stock: stockList, loading: wmsLoading, error: wmsError, setOrders, setPallets, setStock: setStockList } = useWMSData();
-  const [divergences, setDivergences] = useState<ArtsoftStockDivergence[]>(INITIAL_ARTSOFT_DIVERGENCES);
   const [rules, setRules] = useState<RuleConfig[]>(INITIAL_RULE_CONFIGS);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(INITIAL_AUDIT_LOGS);
   const [locations] = useState(INITIAL_LOCATIONS);
@@ -139,33 +164,6 @@ export default function App() {
     setAuditLogs(prev => [log, ...prev]);
   };
 
-  // Handler: Reconcile ARTSOFT Divergence
-  const handleResolveDivergence = (artigoCodigo: string) => {
-    setDivergences(prev =>
-      prev.map(d =>
-        d.artigo_codigo === artigoCodigo
-          ? {
-              ...d,
-              stock_artsoft_erp: d.stock_fisico_wms,
-              diferenca: 0,
-              percentual_divergencia: 0,
-              status: 'ALINHADO'
-            }
-          : d
-      )
-    );
-  };
-
-  // Handler: Trigger Sync ARTSOFT
-  const handleTriggerSync = () => {
-    setDivergences(prev =>
-      prev.map(d => ({
-        ...d,
-        ultima_reconciliacao: new Date().toISOString().replace('T', ' ').slice(0, 16)
-      }))
-    );
-  };
-
   // Handler: Confirm Guia Paletization & ready to ship
   const handleConfirmGuiaPaletizacao = (guiaId: string) => {
     setGuiasEntrada(prev =>
@@ -246,6 +244,8 @@ export default function App() {
         selectedTenant={selectedTenant}
         setSelectedTenant={setSelectedTenant}
         onOpenScanner={() => setIsScannerOpen(true)}
+        nomeUtilizador={utilizador.nome || utilizador.email}
+        aoSair={aoSair}
       />
 
       {/* Status Alert */}
@@ -349,13 +349,7 @@ export default function App() {
         )}
 
         {/* Tab 5: Sync ARTSOFT */}
-        {activeTab === 'artsoft_sync' && (
-          <ArtsoftSyncModule
-            divergences={divergences}
-            onTriggerSync={handleTriggerSync}
-            onResolveDivergence={handleResolveDivergence}
-          />
-        )}
+        {activeTab === 'artsoft_sync' && <ArtsoftSyncModule />}
 
         {/* Tab 5: Motor de Regras */}
         {activeTab === 'regras' && (

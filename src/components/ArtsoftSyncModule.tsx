@@ -1,215 +1,339 @@
 import React, { useState } from 'react';
-import { ArtsoftStockDivergence } from '../types/wms';
-import { 
-  RefreshCw, 
-  Radio, 
-  CheckCircle2, 
-  AlertTriangle, 
-  Database, 
-  ArrowUpRight, 
-  Play, 
-  Search,
-  ShieldAlert,
-  Server
+import {
+  RefreshCw,
+  CheckCircle2,
+  AlertTriangle,
+  Database,
+  Play,
+  Server,
+  Clock,
+  Scale,
+  PackageSearch,
 } from 'lucide-react';
+import { useArtsoftSync } from '../hooks/useArtsoftSync';
+import { ExecucaoSync, LinhaReconciliacao } from '../api';
 
-interface ArtsoftSyncModuleProps {
-  divergences: ArtsoftStockDivergence[];
-  onTriggerSync: () => void;
-  onResolveDivergence: (artigoCodigo: string) => void;
+function num(v: string | number | null | undefined): number {
+  if (v == null) return 0;
+  const n = typeof v === 'number' ? v : Number.parseFloat(v);
+  return Number.isFinite(n) ? n : 0;
 }
 
-export const ArtsoftSyncModule: React.FC<ArtsoftSyncModuleProps> = ({
-  divergences,
-  onTriggerSync,
-  onResolveDivergence
-}) => {
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [syncLogs, setSyncLogs] = useState<string[]>([
-    '10:40:01 [ARTSOFT Connector] Conectado ao endpoint local 192.168.1.28:4218',
-    '10:40:02 [PostgREST] Tabela logistics.artsoft_stock_snapshot sincronizada com sucesso.',
-    '10:40:03 [WMS Engine] Vista vw_reconciliacao_stock calculou 1 divergência crítica.'
-  ]);
+const ROTULO_ESTADO: Record<string, string> = {
+  ok: 'Concluída',
+  incompleto: 'Incompleta',
+  erro_comunicacao: 'Erro de comunicação',
+  erro_autenticacao: 'Erro de autenticação',
+  erro_xml: 'Erro de XML',
+  erro_funcional: 'Erro funcional',
+};
 
-  const handleRunSync = () => {
-    setIsSyncing(true);
-    setTimeout(() => {
-      onTriggerSync();
-      setIsSyncing(false);
-      setSyncLogs(prev => [
-        `${new Date().toLocaleTimeString()} [ARTSOFT Sync] Sincronização executada via REST 192.168.1.28:4218. Snapshot de stock atualizado!`,
-        ...prev
-      ]);
-    }, 1800);
-  };
+function estiloEstado(estado: string): string {
+  if (estado === 'ok') return 'text-emerald-700 bg-emerald-50 border-emerald-200';
+  if (estado === 'incompleto') return 'text-amber-700 bg-amber-50 border-amber-200';
+  return 'text-red-700 bg-red-50 border-red-200';
+}
 
-  const filteredDivergences = divergences.filter(d => 
-    d.artigo_descricao.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    d.artigo_codigo.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+function dataLegivel(valor: string | null): string {
+  if (!valor) return '—';
+  return new Date(valor).toLocaleString('pt-PT', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+const Cartao: React.FC<{ rotulo: string; children: React.ReactNode }> = ({ rotulo, children }) => (
+  <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+    <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{rotulo}</div>
+    <div className="mt-2">{children}</div>
+  </div>
+);
+
+export const ArtsoftSyncModule: React.FC = () => {
+  const {
+    execucoes,
+    health,
+    reconciliacao,
+    loading,
+    error,
+    aSincronizar,
+    aSincronizarStock,
+    ultimoResultado,
+    sincronizar,
+    sincronizarStock,
+  } = useArtsoftSync();
+  const [aba, setAba] = useState<'execucoes' | 'reconciliacao'>('execucoes');
+
+  const comDivergencia = reconciliacao.filter((r) => num(r.diferenca) !== 0);
 
   return (
     <div className="space-y-6">
-      
-      {/* Module Title Header */}
       <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
         <div>
           <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
             <RefreshCw className="w-6 h-6 text-blue-600" />
-            Serviço de Sync ARTSOFT ERP & Reconciliação de Stock
+            Sincronização ARTSOFT
           </h2>
           <p className="text-xs text-slate-500 mt-1">
-            Comparação da vista <code className="text-blue-600 font-mono font-bold">vw_reconciliacao_stock</code> com <code className="text-blue-600 font-mono font-bold">artsoft_stock_snapshot</code>.
+            Importação de guias de transporte para{' '}
+            <code className="text-blue-600 font-mono font-bold">logistics.documento</code> e{' '}
+            <code className="text-blue-600 font-mono font-bold">logistics.linha_documento</code>.
           </p>
         </div>
 
         <button
-          onClick={handleRunSync}
-          disabled={isSyncing}
+          onClick={sincronizar}
+          disabled={aSincronizar}
           className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-lg shadow-sm transition-all disabled:opacity-50 cursor-pointer"
         >
-          <Play className={`w-4 h-4 text-amber-400 ${isSyncing ? 'animate-spin' : ''}`} />
-          <span>{isSyncing ? 'Sincronizando...' : 'Forçar Sync ARTSOFT agora'}</span>
+          {aSincronizar ? (
+            <RefreshCw className="w-4 h-4 animate-spin" />
+          ) : (
+            <Play className="w-4 h-4" />
+          )}
+          {aSincronizar ? 'A sincronizar…' : 'Sincronizar agora'}
         </button>
       </div>
 
-      {/* Connection & Staging Architecture Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        
-        {/* Status Card 1: Connector */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm font-mono text-xs space-y-2">
-          <div className="flex justify-between items-center text-slate-500">
-            <span>Conector Local</span>
-            <Radio className="w-4 h-4 text-emerald-600 animate-pulse" />
-          </div>
-          <p className="font-bold text-slate-900 text-sm font-sans">ARTSOFT REST Connector</p>
-          <p className="text-blue-700 font-bold">Endpoint: 192.168.1.28:4218</p>
-          <p className="text-[11px] text-slate-500">Conexão HTTP Ativa (Pervasive / ARTSOFT Local)</p>
+      {error && (
+        <div
+          role="alert"
+          className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg text-sm"
+        >
+          <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{error}</span>
         </div>
+      )}
 
-        {/* Status Card 2: Safe Staging Isolation */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm font-mono text-xs space-y-2">
-          <div className="flex justify-between items-center text-slate-500">
-            <span>Regra de Segurança WMS</span>
-            <ShieldAlert className="w-4 h-4 text-amber-600" />
-          </div>
-          <p className="font-bold text-slate-900 text-sm font-sans">Isolamento Físico de Stock</p>
-          <p className="text-slate-700">O ERP ARTSOFT nunca altera o stock físico diretamente.</p>
-          <p className="text-[11px] text-emerald-700 font-semibold">Vista vw_reconciliacao_stock em execução.</p>
+      {ultimoResultado && (
+        <div className="flex items-start gap-2 bg-emerald-50 border border-emerald-200 text-emerald-900 px-4 py-3 rounded-lg text-sm">
+          <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>
+            Sincronização concluída: <strong>{ultimoResultado.docs_criados}</strong> guias,{' '}
+            <strong>{ultimoResultado.linhas_total}</strong> linhas,{' '}
+            <strong>{ultimoResultado.erros.length}</strong> erros.
+          </span>
         </div>
+      )}
 
-        {/* Status Card 3: Divergence Summary */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm font-mono text-xs space-y-2">
-          <div className="flex justify-between items-center text-slate-500">
-            <span>Reconciliação Humana</span>
-            <Database className="w-4 h-4 text-blue-600" />
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+        <Cartao rotulo="Estado do conector">
+          {health ? (
+            <span
+              className={`inline-flex items-center gap-1.5 text-sm font-semibold px-2.5 py-1 rounded-full border ${
+                health.healthy
+                  ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                  : 'text-amber-700 bg-amber-50 border-amber-200'
+              }`}
+            >
+              {health.healthy ? (
+                <CheckCircle2 className="w-4 h-4" />
+              ) : (
+                <AlertTriangle className="w-4 h-4" />
+              )}
+              {health.healthy ? 'Operacional' : 'Requer atenção'}
+            </span>
+          ) : (
+            <span className="text-sm text-slate-400">{loading ? 'A carregar…' : '—'}</span>
+          )}
+        </Cartao>
+
+        <Cartao rotulo="Última sincronização">
+          <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-900">
+            <Clock className="w-4 h-4 text-slate-400" />
+            {dataLegivel(health?.lastSync ?? null)}
           </div>
-          <p className="font-bold text-slate-900 text-sm font-sans">Pendentes de Revisão</p>
-          <p className="text-rose-600 font-bold text-sm">
-            {divergences.filter(d => d.status === 'CRITICO').length} Discrepância(s) Crítica(s)
-          </p>
-          <p className="text-[11px] text-slate-500">Alinhamento requerido pelo responsável de armazém.</p>
-        </div>
+          {health?.diasDesdeUltimaSincronizacao != null && (
+            <div className="text-xs text-slate-500 mt-1">
+              {health.diasDesdeUltimaSincronizacao === 0
+                ? 'Hoje'
+                : `Há ${health.diasDesdeUltimaSincronizacao} dia(s)`}
+            </div>
+          )}
+        </Cartao>
+
+        <Cartao rotulo="Produtos com divergência">
+          <div className="flex items-center gap-1.5 text-2xl font-bold text-slate-900">
+            <Scale className="w-5 h-5 text-slate-400" />
+            {loading ? '—' : comDivergencia.length}
+          </div>
+          <div className="text-xs text-slate-500 mt-1">
+            de {reconciliacao.length} produtos comparados
+          </div>
+        </Cartao>
       </div>
 
-      {/* Reconciliation Table */}
-      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-4">
-        
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-            <Server className="w-4 h-4 text-blue-600" />
-            Tabela de Reconciliação (ARTSOFT ERP vs. Stock Físico WMS)
-          </h3>
+      {/* Seletor de abas */}
+      <div className="flex items-center gap-1.5 border-b border-slate-200">
+        {[
+          { id: 'execucoes' as const, rotulo: 'Histórico de execuções', icon: <Server className="w-4 h-4" /> },
+          { id: 'reconciliacao' as const, rotulo: 'Reconciliação de stock', icon: <Scale className="w-4 h-4" /> },
+        ].map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setAba(t.id)}
+            className={`flex items-center gap-1.5 px-4 py-2 text-sm font-semibold border-b-2 -mb-px transition-colors ${
+              aba === t.id
+                ? 'border-blue-600 text-blue-700'
+                : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            {t.icon}
+            {t.rotulo}
+          </button>
+        ))}
+      </div>
 
-          <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-            <input
-              type="text"
-              placeholder="Pesquisar artigo..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
-            />
+      {aba === 'reconciliacao' && (
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="px-5 py-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <PackageSearch className="w-4 h-4 text-slate-400" />
+              <h3 className="text-sm font-bold text-slate-900">
+                Stock ARTSOFT vs WMS
+              </h3>
+            </div>
+            <button
+              onClick={sincronizarStock}
+              disabled={aSincronizarStock}
+              className="flex items-center gap-2 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-lg shadow-sm transition-all disabled:opacity-50 cursor-pointer"
+            >
+              {aSincronizarStock ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="w-3.5 h-3.5" />
+              )}
+              {aSincronizarStock ? 'A atualizar…' : 'Atualizar stock'}
+            </button>
           </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500">
+                  <th className="text-left font-semibold px-5 py-2">SKU</th>
+                  <th className="text-left font-semibold px-5 py-2">Descrição</th>
+                  <th className="text-right font-semibold px-5 py-2">WMS</th>
+                  <th className="text-right font-semibold px-5 py-2">ARTSOFT</th>
+                  <th className="text-right font-semibold px-5 py-2">Diferença</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {loading && (
+                  <tr>
+                    <td colSpan={5} className="px-5 py-8 text-center text-slate-400">
+                      A carregar…
+                    </td>
+                  </tr>
+                )}
+
+                {!loading && reconciliacao.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-5 py-8 text-center text-slate-400">
+                      Sem dados de stock. Carregue em “Atualizar stock”.
+                    </td>
+                  </tr>
+                )}
+
+                {reconciliacao
+                  .filter((r) => num(r.quantidade_artsoft) !== 0 || num(r.quantidade_wms) !== 0)
+                  .sort((a, b) => Math.abs(num(b.diferenca)) - Math.abs(num(a.diferenca)))
+                  .slice(0, 200)
+                  .map((r: LinhaReconciliacao) => {
+                    const dif = num(r.diferenca);
+                    return (
+                      <tr key={r.produto_id} className="hover:bg-slate-50">
+                        <td className="px-5 py-2.5 font-mono text-xs text-slate-600">{r.sku_interno}</td>
+                        <td className="px-5 py-2.5 text-slate-700">{r.descricao}</td>
+                        <td className="px-5 py-2.5 text-right text-slate-700">{num(r.quantidade_wms)}</td>
+                        <td className="px-5 py-2.5 text-right text-slate-700">
+                          {r.quantidade_artsoft == null ? '—' : num(r.quantidade_artsoft)}
+                        </td>
+                        <td className="px-5 py-2.5 text-right">
+                          <span
+                            className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
+                              dif === 0
+                                ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                                : 'text-red-700 bg-red-50 border-red-200'
+                            }`}
+                          >
+                            {dif > 0 ? `+${dif}` : dif}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {aba === 'execucoes' && (
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="px-5 py-3 border-b border-slate-200 flex items-center gap-2">
+          <Server className="w-4 h-4 text-slate-400" />
+          <h3 className="text-sm font-bold text-slate-900">Histórico de execuções</h3>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
+          <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-200 text-slate-500 font-mono text-[11px] bg-slate-50">
-                <th className="p-3">Artigo</th>
-                <th className="p-3">Stock ARTSOFT (ERP)</th>
-                <th className="p-3">Stock Físico (WMS)</th>
-                <th className="p-3">Staging Pending</th>
-                <th className="p-3">Diferença (Un)</th>
-                <th className="p-3">Estado Reconciliação</th>
-                <th className="p-3 text-right">Ação Humana</th>
+              <tr className="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500">
+                <th className="text-left font-semibold px-5 py-2">Data</th>
+                <th className="text-left font-semibold px-5 py-2">Tipo</th>
+                <th className="text-left font-semibold px-5 py-2">Estado</th>
+                <th className="text-right font-semibold px-5 py-2">Páginas</th>
+                <th className="text-left font-semibold px-5 py-2">Correlação</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 font-mono">
-              {filteredDivergences.map(div => {
-                const isCrit = div.status === 'CRITICO';
-                return (
-                  <tr key={div.artigo_codigo} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="p-3">
-                      <span className="font-bold text-slate-900 font-sans block">{div.artigo_descricao}</span>
-                      <span className="text-slate-500 text-[11px]">{div.artigo_codigo}</span>
-                    </td>
-                    <td className="p-3 font-bold text-slate-700">{div.stock_artsoft_erp} Un</td>
-                    <td className="p-3 font-bold text-blue-600">{div.stock_fisico_wms} Un</td>
-                    <td className="p-3 text-slate-500">{div.stock_staging_artsoft} Un</td>
-                    <td className={`p-3 font-bold ${div.diferenca !== 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                      {div.diferenca > 0 ? `+${div.diferenca}` : div.diferenca} Un
-                    </td>
-                    <td className="p-3">
-                      <span
-                        className={`px-2 py-0.5 text-[10px] font-bold rounded ${
-                          isCrit
-                            ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                            : div.status === 'DIVERGENCIA_MENOR'
-                            ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                            : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                        }`}
-                      >
-                        {div.status}
-                      </span>
-                    </td>
-                    <td className="p-3 text-right">
-                      {div.status !== 'ALINHADO' ? (
-                        <button
-                          onClick={() => onResolveDivergence(div.artigo_codigo)}
-                          className="px-3 py-1 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-[11px] rounded transition-colors shadow-xs cursor-pointer"
-                        >
-                          Reconciliar
-                        </button>
-                      ) : (
-                        <span className="text-emerald-600 font-bold text-[11px] flex items-center justify-end gap-1">
-                          <CheckCircle2 className="w-3.5 h-3.5" /> Alinhado
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
+            <tbody className="divide-y divide-slate-100">
+              {loading && (
+                <tr>
+                  <td colSpan={5} className="px-5 py-8 text-center text-slate-400">
+                    A carregar…
+                  </td>
+                </tr>
+              )}
+
+              {!loading && execucoes.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-5 py-8 text-center text-slate-400">
+                    Ainda não há sincronizações registadas.
+                  </td>
+                </tr>
+              )}
+
+              {execucoes.map((e: ExecucaoSync) => (
+                <tr key={e.id} className="hover:bg-slate-50">
+                  <td className="px-5 py-2.5 text-slate-700 whitespace-nowrap">
+                    {dataLegivel(e.executado_em)}
+                  </td>
+                  <td className="px-5 py-2.5 text-slate-700">{e.tipo}</td>
+                  <td className="px-5 py-2.5">
+                    <span
+                      className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${estiloEstado(e.estado)}`}
+                    >
+                      {ROTULO_ESTADO[e.estado] ?? e.estado}
+                    </span>
+                    {e.erro_resumo && (
+                      <div className="text-xs text-red-600 mt-1">{e.erro_resumo}</div>
+                    )}
+                  </td>
+                  <td className="px-5 py-2.5 text-right text-slate-700">{e.pagina ?? '—'}</td>
+                  <td className="px-5 py-2.5 font-mono text-xs text-slate-400">
+                    {e.correlation_id ? e.correlation_id.slice(0, 8) : '—'}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
       </div>
-
-      {/* Sync Console Logs */}
-      <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-xs text-slate-300 space-y-2">
-        <span className="text-slate-500 block text-[10px] font-bold uppercase tracking-wider">
-          Consola do Serviço de Sincronização em Tempo Real
-        </span>
-        <div className="space-y-1 max-h-32 overflow-y-auto">
-          {syncLogs.map((log, idx) => (
-            <div key={idx} className="text-slate-400">
-              {log}
-            </div>
-          ))}
-        </div>
-      </div>
+      )}
     </div>
   );
 };
