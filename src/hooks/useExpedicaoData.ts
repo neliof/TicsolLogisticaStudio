@@ -5,18 +5,24 @@ import { api } from '../api';
 /** Mapeia uma linha_documento do ARTSOFT para LinhaGuia. */
 function linhaDocParaLinhaGuia(l: any, guiaId: string): LinhaGuia {
   const extra = l.dados_extra || {};
+  // quantidade vem como "1.000" (ponto como separador de milhares em PT) ou "1.5"
+  const qtd = String(l.quantidade || '0').replace(/\./g, '').replace(',', '.');
+  const quantidade = Math.max(1, Number(qtd) || 1);
+  // peso em BD pode ser 0 ou string — default 0.5kg se ausente ou inválido
+  const peso = Number(extra.peso) > 0 ? Number(extra.peso) : 0.5;
+
   return {
     id: `${guiaId}-${l.nr_linha ?? l.id}`,
     guia_id: guiaId,
     artigo_codigo: l.artigo_codigo || '',
     artigo_descricao: l.descricao || '',
     ean_barcode: extra.ean13 || '',
-    quantidade_solicitada: Number(l.quantidade) || 0,
+    quantidade_solicitada: quantidade,
     lote: '',
     data_validade: '',
     temperatura_armazenamento: 'AMBIENTE',
     requer_palote_separada: false,
-    peso_unitario_kg: Number(extra.peso) || 0,
+    peso_unitario_kg: peso,
     volume_unitario_m3: 0,
     status: 'PENDENTE',
   };
