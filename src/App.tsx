@@ -6,7 +6,6 @@ import {
 } from './data/mockData';
 import { lerSessao, terminarSessao, Utilizador } from './api';
 import { useRegras } from './hooks/useRegras';
-import { Entrar } from './components/Entrar';
 import { Navbar } from './components/Navbar';
 import { RececaoModule } from './components/RececaoModule';
 import { PaletizacaoModule } from './components/PaletizacaoModule';
@@ -24,11 +23,6 @@ import { GuiaTransporte, PaletaExpedicao, ChecklistExpedicao, ComprovanteEmbarqu
 export default function App() {
   const [utilizador, setUtilizador] = useState<Utilizador | null>(lerSessao()?.utilizador ?? null);
 
-  if (!utilizador) {
-    return <Entrar aoEntrar={setUtilizador} />;
-  }
-
-  // Montado apenas com sessão activa, para que nenhum pedido saia sem token.
   return (
     <AppAutenticada
       utilizador={utilizador}
@@ -44,7 +38,7 @@ function AppAutenticada({
   utilizador,
   aoSair
 }: {
-  utilizador: Utilizador;
+  utilizador: Utilizador | null;
   aoSair: () => void;
 }) {
   const [activeTab, setActiveTab] = useState<AppTab>('rececao');
@@ -244,7 +238,7 @@ function AppAutenticada({
         selectedTenant={selectedTenant}
         setSelectedTenant={setSelectedTenant}
         onOpenScanner={() => setIsScannerOpen(true)}
-        nomeUtilizador={utilizador.nome || utilizador.email}
+        nomeUtilizador={utilizador ? utilizador.nome || utilizador.email : 'Utilizador'}
         aoSair={aoSair}
       />
 
