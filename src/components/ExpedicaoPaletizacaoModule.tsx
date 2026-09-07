@@ -421,55 +421,61 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
               </div>
             )}
 
-            {/* Linha Summary — Completo */}
-            {activeLinha && (
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3 font-mono text-xs">
+            {/* Linha Summary — Completo. Modo single: só a linha ativa.
+                Modo packing: todas as linhas selecionadas, para que
+                selecionar várias no quadro anterior mostre todas aqui
+                (antes só a linha[0] aparecia, nunca as outras). */}
+            {(packingMode
+              ? selectedGuia?.linhas.filter(l => selectedLinhasIds.has(l.id)) || []
+              : activeLinha ? [activeLinha] : []
+            ).map(linha => (
+              <div key={linha.id} className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3 font-mono text-xs">
                 <div className="flex justify-between text-slate-700">
-                  <span>Artigo: <strong>{activeLinha.artigo_descricao}</strong></span>
-                  <span>EAN: <strong className="text-purple-600">{activeLinha.ean_barcode}</strong></span>
+                  <span>Artigo: <strong>{linha.artigo_descricao}</strong></span>
+                  <span>EAN: <strong className="text-purple-600">{linha.ean_barcode}</strong></span>
                 </div>
 
                 {/* Linha 1: Número, Quantidade, Temperatura */}
                 <div className="grid grid-cols-3 gap-2 bg-white p-2.5 rounded-lg border border-slate-200 text-center shadow-xs">
                   <div>
                     <span className="text-[10px] text-slate-500 block">NR. LINHA</span>
-                    <span className="text-sm font-bold text-slate-800">{activeLinha.nr_linha || '—'}</span>
+                    <span className="text-sm font-bold text-slate-800">{linha.nr_linha || '—'}</span>
                   </div>
                   <div>
                     <span className="text-[10px] text-slate-500 block">QTD SOLICITADA</span>
-                    <span className="text-sm font-bold text-slate-800">{caixasSolicitadas} Cx</span>
+                    <span className="text-sm font-bold text-slate-800">{linha.quantidade_solicitada} Cx</span>
                   </div>
                   <div>
                     <span className="text-[10px] text-purple-600 block">TEMPERATURA</span>
-                    <span className="text-sm font-bold text-purple-700">{activeLinha.temperatura_armazenamento}</span>
+                    <span className="text-sm font-bold text-purple-700">{linha.temperatura_armazenamento}</span>
                   </div>
                 </div>
 
                 {/* Linha 2: Valores (se existirem) */}
-                {(activeLinha.valor_unitario || activeLinha.total_liquido) && (
+                {(linha.valor_unitario || linha.total_liquido) && (
                   <div className="grid grid-cols-4 gap-2 bg-white p-2.5 rounded-lg border border-slate-200 text-center shadow-xs">
                     <div>
                       <span className="text-[10px] text-slate-500 block">VALOR UNIT.</span>
                       <span className="text-sm font-bold text-slate-800">
-                        {activeLinha.valor_unitario ? `€${activeLinha.valor_unitario.toFixed(2)}` : '—'}
+                        {linha.valor_unitario ? `€${linha.valor_unitario.toFixed(2)}` : '—'}
                       </span>
                     </div>
                     <div>
                       <span className="text-[10px] text-slate-500 block">IVA %</span>
                       <span className="text-sm font-bold text-slate-800">
-                        {activeLinha.iva_percentual ? `${activeLinha.iva_percentual.toFixed(1)}%` : '—'}
+                        {linha.iva_percentual ? `${linha.iva_percentual.toFixed(1)}%` : '—'}
                       </span>
                     </div>
                     <div>
                       <span className="text-[10px] text-slate-500 block">DESCONTO %</span>
                       <span className="text-sm font-bold text-slate-800">
-                        {activeLinha.desconto_percentual ? `${activeLinha.desconto_percentual.toFixed(1)}%` : '—'}
+                        {linha.desconto_percentual ? `${linha.desconto_percentual.toFixed(1)}%` : '—'}
                       </span>
                     </div>
                     <div>
                       <span className="text-[10px] text-slate-500 block">TOTAL LÍQUIDO</span>
                       <span className="text-sm font-bold text-emerald-700">
-                        {activeLinha.total_liquido ? `€${activeLinha.total_liquido.toFixed(2)}` : '—'}
+                        {linha.total_liquido ? `€${linha.total_liquido.toFixed(2)}` : '—'}
                       </span>
                     </div>
                   </div>
@@ -479,15 +485,15 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
                 <div className="grid grid-cols-2 gap-2 bg-white p-2.5 rounded-lg border border-slate-200 text-center shadow-xs">
                   <div>
                     <span className="text-[10px] text-slate-500 block">LOTE</span>
-                    <span className="text-sm font-bold text-slate-800">{activeLinha.lote || '—'}</span>
+                    <span className="text-sm font-bold text-slate-800">{linha.lote || '—'}</span>
                   </div>
                   <div>
                     <span className="text-[10px] text-slate-500 block">VALIDADE</span>
-                    <span className="text-sm font-bold text-slate-800">{activeLinha.data_validade || '—'}</span>
+                    <span className="text-sm font-bold text-slate-800">{linha.data_validade || '—'}</span>
                   </div>
                 </div>
               </div>
-            )}
+            ))}
 
             {/* Pallet Stacking Parameters */}
             <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2 border-b border-slate-200 pb-3 pt-2">
