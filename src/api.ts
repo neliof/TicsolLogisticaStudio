@@ -49,6 +49,7 @@ export interface LinhaReconciliacao {
   ultima_sincronizacao: string | null;
   conector_usado: string | null;
   diferenca: string | number | null;
+  ean13: string | null;
 }
 
 export interface ResultadoSync {
@@ -57,6 +58,25 @@ export interface ResultadoSync {
   linhas_total: number;
   erros: unknown[];
   ultima_execucao: { estado: string; correlation_id: string; paginas: number };
+}
+
+export interface ResultadoSyncProdutos {
+  criados: number;
+  atualizados: number;
+  processados: number;
+  erros: unknown[];
+}
+
+export interface ResultadoSyncTerceiros {
+  clientes: { processados: number; criados: number; atualizados: number; erros: unknown[] };
+  fornecedores: { processados: number; criados: number; atualizados: number; erros: unknown[] };
+}
+
+export interface ResultadoSyncCompleto {
+  produtos: ResultadoSyncProdutos | null;
+  terceiros: ResultadoSyncTerceiros | null;
+  guias: ResultadoSync | null;
+  erros: string[];
 }
 
 export function guardarSessao(token: string, utilizador: Utilizador): void {
@@ -189,6 +209,28 @@ export const api = {
     return pedir<{ gravados: number; nao_resolvidos: number; produtos: number }>(
       '/api/artsoft/stock/sync',
       { method: 'POST' }
+    );
+  },
+
+  sincronizarProdutos() {
+    return pedir<ResultadoSyncProdutos>('/api/artsoft/produtos/sync', { method: 'POST' });
+  },
+
+  sincronizarTerceiros() {
+    return pedir<ResultadoSyncTerceiros>('/api/artsoft/terceiros/sync', { method: 'POST' });
+  },
+
+  discover_artsoft_series() {
+    return pedir<{ series: string[]; total: number }>('/api/artsoft/series/discover');
+  },
+
+  save_artsoft_series(payload: { series: string[] }) {
+    return pedir<{ success: boolean; chave: string; valor: string; message: string }>(
+      '/api/artsoft/series/save',
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }
     );
   },
 };

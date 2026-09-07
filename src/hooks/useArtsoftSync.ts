@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api, empresaIdDaSessao, ExecucaoSync, LinhaReconciliacao, ResultadoSync, SyncHealth } from '../api';
+import {
+  api,
+  empresaIdDaSessao,
+  ExecucaoSync,
+  LinhaReconciliacao,
+  ResultadoSync,
+  ResultadoSyncCompleto,
+  SyncHealth,
+} from '../api';
 
 export function useArtsoftSync() {
   const [execucoes, setExecucoes] = useState<ExecucaoSync[]>([]);
@@ -10,6 +18,8 @@ export function useArtsoftSync() {
   const [aSincronizar, setASincronizar] = useState(false);
   const [aSincronizarStock, setASincronizarStock] = useState(false);
   const [ultimoResultado, setUltimoResultado] = useState<ResultadoSync | null>(null);
+  const [etapaSincronizacao, setEtapaSincronizacao] = useState<string | null>(null);
+  const [ultimoResultadoCompleto, setUltimoResultadoCompleto] = useState<ResultadoSyncCompleto | null>(null);
 
   const carregar = useCallback(async () => {
     const empresaId = empresaIdDaSessao();
@@ -36,18 +46,55 @@ export function useArtsoftSync() {
     return () => clearInterval(intervalo);
   }, [carregar]);
 
+  // Sincroniza produtos e terceiros antes das guias: as linhas de guia só
+  // resolvem produto_id se o artigo já existir em logistics.produto, e o
+  // cabeçalho só resolve cliente_id se o terceiro já existir.
   const sincronizar = useCallback(async () => {
     setASincronizar(true);
     setError(null);
+    const resultadoCompleto: ResultadoSyncCompleto = {
+      produtos: null,
+      terceiros: null,
+      guias: null,
+      erros: [],
+    };
     try {
-      const resultado = await api.sincronizarGuias();
-      setUltimoResultado(resultado);
+      setEtapaSincronizacao('A sincronizar artigos…');
+      try {
+        resultadoCompleto.produtos = await api.sincronizarProdutos();
+      } catch (err) {
+        resultadoCompleto.erros.push(
+          `Artigos: ${err instanceof Error ? err.message : 'falha desconhecida'}`
+        );
+      }
+
+      setEtapaSincronizacao('A sincronizar clientes e fornecedores…');
+      try {
+        resultadoCompleto.terceiros = await api.sincronizarTerceiros();
+      } catch (err) {
+        resultadoCompleto.erros.push(
+          `Terceiros: ${err instanceof Error ? err.message : 'falha desconhecida'}`
+        );
+      }
+
+      setEtapaSincronizacao('A sincronizar guias de transporte…');
+      try {
+        resultadoCompleto.guias = await api.sincronizarGuias();
+        setUltimoResultado(resultadoCompleto.guias);
+      } catch (err) {
+        resultadoCompleto.erros.push(
+          `Guias: ${err instanceof Error ? err.message : 'falha desconhecida'}`
+        );
+      }
+
+      setUltimoResultadoCompleto(resultadoCompleto);
+      if (resultadoCompleto.erros.length > 0) {
+        setError(resultadoCompleto.erros.join(' | '));
+      }
       await carregar();
-      return resultado;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'A sincronização falhou.');
-      return null;
+      return resultadoCompleto;
     } finally {
+      setEtapaSincronizacao(null);
       setASincronizar(false);
     }
   }, [carregar]);
@@ -74,6 +121,8 @@ export function useArtsoftSync() {
     aSincronizar,
     aSincronizarStock,
     ultimoResultado,
+    ultimoResultadoCompleto,
+    etapaSincronizacao,
     sincronizar,
     sincronizarStock,
     recarregar: carregar,

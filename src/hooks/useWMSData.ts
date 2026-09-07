@@ -16,7 +16,7 @@ function snapshotParaStock(r: LinhaReconciliacao): StockPosition {
     zona: 'Cais de Receção',
     artigo_codigo: r.sku_interno,
     artigo_descricao: r.descricao,
-    ean_barcode: '',
+    ean_barcode: r.ean13 || '',
     lote: '',
     data_validade: '',
     dias_para_validade: 0,

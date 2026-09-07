@@ -9,9 +9,11 @@ import {
   Clock,
   Scale,
   PackageSearch,
+  Settings,
 } from 'lucide-react';
 import { useArtsoftSync } from '../hooks/useArtsoftSync';
 import { ExecucaoSync, LinhaReconciliacao } from '../api';
+import { ConfigureSeriesModal } from './ConfigureSeriesModal';
 
 function num(v: string | number | null | undefined): number {
   if (v == null) return 0;
@@ -61,11 +63,13 @@ export const ArtsoftSyncModule: React.FC = () => {
     error,
     aSincronizar,
     aSincronizarStock,
-    ultimoResultado,
+    ultimoResultadoCompleto,
+    etapaSincronizacao,
     sincronizar,
     sincronizarStock,
   } = useArtsoftSync();
   const [aba, setAba] = useState<'execucoes' | 'reconciliacao'>('execucoes');
+  const [showSeriesModal, setShowSeriesModal] = useState(false);
 
   const comDivergencia = reconciliacao.filter((r) => num(r.diferenca) !== 0);
 
@@ -78,24 +82,35 @@ export const ArtsoftSyncModule: React.FC = () => {
             Sincronização ARTSOFT
           </h2>
           <p className="text-xs text-slate-500 mt-1">
-            Importação de guias de transporte para{' '}
-            <code className="text-blue-600 font-mono font-bold">logistics.documento</code> e{' '}
-            <code className="text-blue-600 font-mono font-bold">logistics.linha_documento</code>.
+            Sincroniza artigos, clientes/fornecedores e guias de transporte para{' '}
+            <code className="text-blue-600 font-mono font-bold">logistics.produto</code>,{' '}
+            <code className="text-blue-600 font-mono font-bold">logistics.cliente</code>/
+            <code className="text-blue-600 font-mono font-bold">fornecedor</code> e{' '}
+            <code className="text-blue-600 font-mono font-bold">logistics.documento</code>.
           </p>
         </div>
 
-        <button
-          onClick={sincronizar}
-          disabled={aSincronizar}
-          className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-lg shadow-sm transition-all disabled:opacity-50 cursor-pointer"
-        >
-          {aSincronizar ? (
-            <RefreshCw className="w-4 h-4 animate-spin" />
-          ) : (
-            <Play className="w-4 h-4" />
-          )}
-          {aSincronizar ? 'A sincronizar…' : 'Sincronizar agora'}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowSeriesModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-900 font-semibold text-xs rounded-lg shadow-sm transition-all cursor-pointer"
+          >
+            <Settings className="w-4 h-4" />
+            Configurar séries
+          </button>
+          <button
+            onClick={sincronizar}
+            disabled={aSincronizar}
+            className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-lg shadow-sm transition-all disabled:opacity-50 cursor-pointer"
+          >
+            {aSincronizar ? (
+              <RefreshCw className="w-4 h-4 animate-spin" />
+            ) : (
+              <Play className="w-4 h-4" />
+            )}
+            {aSincronizar ? (etapaSincronizacao ?? 'A sincronizar…') : 'Sincronizar agora'}
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -108,14 +123,30 @@ export const ArtsoftSyncModule: React.FC = () => {
         </div>
       )}
 
-      {ultimoResultado && (
+      {ultimoResultadoCompleto && !aSincronizar && (
         <div className="flex items-start gap-2 bg-emerald-50 border border-emerald-200 text-emerald-900 px-4 py-3 rounded-lg text-sm">
           <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
-          <span>
-            Sincronização concluída: <strong>{ultimoResultado.docs_criados}</strong> guias,{' '}
-            <strong>{ultimoResultado.linhas_total}</strong> linhas,{' '}
-            <strong>{ultimoResultado.erros.length}</strong> erros.
-          </span>
+          <div className="space-y-0.5">
+            {ultimoResultadoCompleto.produtos && (
+              <div>
+                Artigos: <strong>{ultimoResultadoCompleto.produtos.criados}</strong> criados,{' '}
+                <strong>{ultimoResultadoCompleto.produtos.atualizados}</strong> atualizados
+              </div>
+            )}
+            {ultimoResultadoCompleto.terceiros && (
+              <div>
+                Clientes: <strong>{ultimoResultadoCompleto.terceiros.clientes.criados}</strong> criados
+                {' | '}Fornecedores:{' '}
+                <strong>{ultimoResultadoCompleto.terceiros.fornecedores.criados}</strong> criados
+              </div>
+            )}
+            {ultimoResultadoCompleto.guias && (
+              <div>
+                Guias: <strong>{ultimoResultadoCompleto.guias.docs_criados}</strong> documentos,{' '}
+                <strong>{ultimoResultadoCompleto.guias.linhas_total}</strong> linhas
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -334,6 +365,15 @@ export const ArtsoftSyncModule: React.FC = () => {
         </div>
       </div>
       )}
+
+      <ConfigureSeriesModal
+        isOpen={showSeriesModal}
+        onClose={() => setShowSeriesModal(false)}
+        onSaved={() => {
+          // Recarregar dados após salvar as séries
+          window.location.reload();
+        }}
+      />
     </div>
   );
 };
