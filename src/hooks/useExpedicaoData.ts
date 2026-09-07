@@ -5,8 +5,22 @@ import { api } from '../api';
 /** Mapeia uma linha_documento do ARTSOFT para LinhaGuia. */
 function linhaDocParaLinhaGuia(l: any, guiaId: string): LinhaGuia {
   const extra = l.dados_extra || {};
-  // quantidade vem como "1.000" (ponto como separador de milhares em PT) ou "1.5"
-  const qtd = String(l.quantidade || '0').replace(/\./g, '').replace(',', '.');
+  // quantidade: "1.000" (milhar), "6.00" (decimal), "6,50" (decimal), "1.000,50" (milhar+decimal)
+  // Heurística: 2 dígitos após último sep → decimal; 3+ → milhar
+  const qtdStr = String(l.quantidade || '0').trim();
+  const lastSepIdx = Math.max(qtdStr.lastIndexOf('.'), qtdStr.lastIndexOf(','));
+  let qtd = qtdStr;
+  if (lastSepIdx > -1) {
+    const digitsAfterSep = qtdStr.length - lastSepIdx - 1;
+    if (digitsAfterSep === 2) {
+      // Decimal: remover pontos anteriores, manter o último sep como ponto
+      const before = qtdStr.substring(0, lastSepIdx).replace(/\./g, '');
+      qtd = before + '.' + qtdStr.substring(lastSepIdx + 1);
+    } else {
+      // Milhar: remover todos pontos, converter vírgula para ponto
+      qtd = qtdStr.replace(/\./g, '').replace(',', '.');
+    }
+  }
   const quantidade = Math.max(1, Number(qtd) || 1);
   // peso em BD pode ser 0 ou string — default 0.5kg se ausente ou inválido
   const peso = Number(extra.peso) > 0 ? Number(extra.peso) : 0.5;
