@@ -25,17 +25,24 @@ interface ExpedicaoPaletizacaoModuleProps {
   ruleConfigs: RuleConfig[];
   selectedTenant: string;
   onPalletCreated: (pallet: PaletaExpedicao, guiaId: string, linhaId: string, qtdAdicionada: number) => void;
+  onSelectGuia?: (guiaId: string) => void;
 }
 
 export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProps> = ({
   guias,
   ruleConfigs,
   selectedTenant,
-  onPalletCreated
+  onPalletCreated,
+  onSelectGuia
 }) => {
   // Select Guia e Linha
   const [selectedGuiaId, setSelectedGuiaId] = useState<string>(guias[0]?.id || '');
   const selectedGuia = guias.find(g => g.id === selectedGuiaId) || guias[0];
+
+  // Carrega as linhas quando guia muda
+  React.useEffect(() => {
+    if (selectedGuia && onSelectGuia) onSelectGuia(selectedGuia.id);
+  }, [selectedGuia?.id, onSelectGuia]);
 
   const [selectedLinhaId, setSelectedLinhaId] = useState<string>(selectedGuia?.linhas[0]?.id || '');
   const activeLinha = selectedGuia?.linhas.find(l => l.id === selectedLinhaId) || selectedGuia?.linhas[0];

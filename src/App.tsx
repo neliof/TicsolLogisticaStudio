@@ -324,6 +324,7 @@ function AppAutenticada({
             ruleConfigs={rules}
             selectedTenant={selectedTenant}
             onPalletCreated={handleCreatePaletaExpedicao}
+            onSelectGuia={carregarLinhas}
           />
         )}
 
