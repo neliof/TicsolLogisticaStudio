@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { GuiaTransporte, PaletaExpedicao, LinhaGuia } from '../types/expedicao';
+import { GuiaTransporte, PaletaExpedicao } from '../types/expedicao';
 import { PalletSSCC, RuleConfig } from '../types/wms';
 import { api } from '../api';
 import { generateSSCC, buildGS1128String, formatToGS1Date } from '../utils/gs1';
@@ -87,10 +87,24 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
   const [activePrintPallet, setActivePrintPallet] = useState<PalletSSCC | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
+  // Linhas efetivamente em jogo: em packing mode são todas as selecionadas
+  // (várias), não só a "linha ativa" — a mesma lista usada no resumo e em
+  // handleMaterializePallet, para os três lugares concordarem.
+  const linhasSelecionadas = packingMode
+    ? selectedGuia?.linhas.filter(l => selectedLinhasIds.has(l.id)) || []
+    : activeLinha ? [activeLinha] : [];
+
   // Cálculos
-  const caixasSolicitadas = activeLinha ? activeLinha.quantidade_solicitada : 0;
+  const caixasSolicitadas = linhasSelecionadas.reduce((sum, l) => sum + l.quantidade_solicitada, 0);
   const caixasNaPaleteProposta = caixasPorCamada * numCamadas;
-  const pesoUnitario = activeLinha?.peso_unitario_kg || 0.5;
+  // Peso médio ponderado por quantidade: com produtos de pesos diferentes na
+  // mesma palete, usar só o peso do primeiro produto sub/sobrestimava o
+  // peso bruto total consoante qual ficasse "ativo".
+  const pesoUnitario =
+    caixasSolicitadas > 0
+      ? linhasSelecionadas.reduce((sum, l) => sum + (l.peso_unitario_kg || 0.5) * l.quantidade_solicitada, 0) /
+        caixasSolicitadas
+      : 0.5;
   const alturaPaleteCm = (pesoUnitario > 0 ? (numCamadas * 25) : 110) + 14; // 14cm Euro-pallet
   const pesoLiquidoKg = Math.round(caixasNaPaleteProposta * pesoUnitario * 0.9 * 10) / 10;
   const pesoBrutoKg = Math.round((caixasNaPaleteProposta * pesoUnitario + 22) * 10) / 10;
@@ -117,10 +131,9 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
   const handleMaterializePallet = () => {
     if (!selectedGuia) return;
 
-    // Packing List: múltiplas linhas
-    const linhasApalete = packingMode
-      ? Array.from(selectedLinhasIds).map(id => selectedGuia.linhas.find(l => l.id === id)).filter(Boolean) as LinhaGuia[]
-      : [activeLinha].filter(Boolean);
+    // Packing List: múltiplas linhas (mesma lista usada nos cálculos e no
+    // resumo — linhasSelecionadas, definida acima).
+    const linhasApalete = linhasSelecionadas;
 
     if (linhasApalete.length === 0) {
       alert('Seleciona pelo menos uma linha!');
@@ -430,15 +443,9 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
         {/* Linha Summary — Completo, em grid largo aproveitando a página
             inteira. Modo single: só a linha ativa. Modo packing: todas as
             linhas selecionadas (antes só a linha[0] aparecia). */}
-        {(packingMode
-          ? selectedGuia?.linhas.filter(l => selectedLinhasIds.has(l.id)) || []
-          : activeLinha ? [activeLinha] : []
-        ).length > 0 && (
+        {linhasSelecionadas.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {(packingMode
-              ? selectedGuia?.linhas.filter(l => selectedLinhasIds.has(l.id)) || []
-              : activeLinha ? [activeLinha] : []
-            ).map(linha => (
+            {linhasSelecionadas.map(linha => (
               <div key={linha.id} className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3 font-mono text-xs">
                 <div className="flex justify-between gap-2 text-slate-700">
                   <span className="truncate">Artigo: <strong>{linha.artigo_descricao}</strong></span>
