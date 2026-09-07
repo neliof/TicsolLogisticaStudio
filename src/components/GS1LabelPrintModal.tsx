@@ -372,9 +372,17 @@ export const GS1LabelPrintModal: React.FC<GS1LabelPrintModalProps> = ({ pallet, 
           </div>
         )}
 
-        {/* Footer info */}
-        <div className="mt-4 text-center text-xs text-slate-500 no-print">
-          Operador: {pallet.operador} • Data de Criação: {pallet.data_criacao}
+        {/* Footer info + Close button */}
+        <div className="mt-6 space-y-3 no-print">
+          <div className="text-center text-xs text-slate-500">
+            Operador: {pallet.operador} • Data de Criação: {pallet.data_criacao}
+          </div>
+          <button
+            onClick={onClose}
+            className="w-full px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold text-sm rounded-lg transition-all"
+          >
+            Fechar
+          </button>
         </div>
       </div>
     </div>

@@ -13,18 +13,23 @@ function linhaDocParaLinhaGuia(l: any, guiaId: string): LinhaGuia {
 
   return {
     id: `${guiaId}-${l.nr_linha ?? l.id}`,
+    nr_linha: l.nr_linha,
     guia_id: guiaId,
     artigo_codigo: l.artigo_codigo || '',
     artigo_descricao: l.descricao || '',
     ean_barcode: extra.ean13 || '',
     quantidade_solicitada: quantidade,
-    lote: '',
-    data_validade: '',
+    lote: extra.lote || '',
+    data_validade: extra.data_validade || '',
     temperatura_armazenamento: 'AMBIENTE',
     requer_palote_separada: false,
     peso_unitario_kg: peso,
     volume_unitario_m3: 0,
     status: 'PENDENTE',
+    valor_unitario: Number(extra.valor_unitario) || undefined,
+    iva_percentual: Number(extra.iva) || undefined,
+    desconto_percentual: Number(extra.desconto) || undefined,
+    total_liquido: Number(extra.total_liquido) || undefined,
   };
 }
 

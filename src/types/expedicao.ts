@@ -23,6 +23,7 @@ export interface GuiaTransporte {
 // Linha da Guia — cada produto na encomenda
 export interface LinhaGuia {
   id: string;
+  nr_linha?: number;
   guia_id: string;
   artigo_codigo: string;
   artigo_descricao: string; // ex: "Nívea Creme 200ml"
@@ -35,6 +36,11 @@ export interface LinhaGuia {
   peso_unitario_kg: number;
   volume_unitario_m3: number;
   status: 'PENDENTE' | 'PREPARANDO' | 'PALETIZADA' | 'PRONTA';
+  // Valores (ARTSOFT)
+  valor_unitario?: number;
+  iva_percentual?: number;
+  desconto_percentual?: number;
+  total_liquido?: number;
 }
 
 // Palete Expedição — agrupa linhas compatíveis + etiqueta SSCC
