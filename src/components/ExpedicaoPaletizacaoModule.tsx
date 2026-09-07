@@ -58,6 +58,25 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
   const [syncDataFim, setSyncDataFim] = useState('');
   const [syncLoading, setSyncLoading] = useState(false);
 
+  // Filtro e ordenação
+  const [filterText, setFilterText] = useState('');
+  const [sortBy, setSortBy] = useState<'numero' | 'cliente' | 'data'>('numero');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  // Aplicar filtro e ordenação
+  const guiasFiltered = guias.filter(g =>
+    g.numero_guia.toLowerCase().includes(filterText.toLowerCase()) ||
+    g.cliente_nome.toLowerCase().includes(filterText.toLowerCase())
+  );
+
+  const guiasSorted = [...guiasFiltered].sort((a, b) => {
+    let cmp = 0;
+    if (sortBy === 'numero') cmp = a.numero_guia.localeCompare(b.numero_guia);
+    else if (sortBy === 'cliente') cmp = a.cliente_nome.localeCompare(b.cliente_nome);
+    else cmp = new Date(a.data_criacao).getTime() - new Date(b.data_criacao).getTime();
+    return sortDir === 'asc' ? cmp : -cmp;
+  });
+
 
   // Rule: Sonae MC caderno de encargos
   const activeRule = ruleConfigs.find(r => r.cliente_id === 'SONAE_MC') || ruleConfigs[0];
@@ -258,20 +277,58 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
         <div className="lg:col-span-7 space-y-6">
           <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-5">
 
-            {/* Seleção Guia */}
+            {/* Seleção Guia com Filtro e Ordenação */}
             <div>
               <label className="text-slate-700 block mb-2 font-medium text-sm">1. Selecionar Guia de Transporte</label>
-              <select
-                value={selectedGuiaId}
-                onChange={(e) => setSelectedGuiaId(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 font-mono text-purple-700 font-bold focus:outline-none focus:border-purple-500"
-              >
-                {guias.map(g => (
-                  <option key={g.id} value={g.id}>
-                    {g.numero_guia} - {g.cliente_nome}
-                  </option>
-                ))}
-              </select>
+
+              {/* Filtro */}
+              <input
+                type="text"
+                placeholder="Procura número ou cliente…"
+                value={filterText}
+                onChange={(e) => setFilterText(e.target.value)}
+                className="w-full bg-white border border-slate-300 rounded-lg p-2 mb-2 text-sm focus:outline-none focus:border-purple-500"
+              />
+
+              {/* Ordenação */}
+              <div className="flex gap-2 mb-2">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className="flex-1 bg-slate-50 border border-slate-300 rounded-lg p-1.5 text-xs focus:outline-none focus:border-purple-500"
+                >
+                  <option value="numero">Número</option>
+                  <option value="cliente">Cliente</option>
+                  <option value="data">Data</option>
+                </select>
+                <button
+                  onClick={() => setSortDir(sortDir === 'asc' ? 'desc' : 'asc')}
+                  className="px-2 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 transition-all"
+                >
+                  {sortDir === 'asc' ? '↑' : '↓'}
+                </button>
+              </div>
+
+              {/* Lista de Guias */}
+              <div className="border border-slate-300 rounded-lg bg-white max-h-48 overflow-y-auto">
+                {guiasSorted.length === 0 ? (
+                  <div className="p-3 text-center text-sm text-slate-500">Nenhuma guia encontrada</div>
+                ) : (
+                  guiasSorted.map(g => (
+                    <button
+                      key={g.id}
+                      onClick={() => setSelectedGuiaId(g.id)}
+                      className={`w-full text-left p-3 border-b border-slate-100 hover:bg-slate-50 transition-all text-sm ${
+                        selectedGuiaId === g.id ? 'bg-purple-50 border-l-4 border-l-purple-600' : ''
+                      }`}
+                    >
+                      <div className="font-mono font-bold text-purple-700">{g.numero_guia}</div>
+                      <div className="text-xs text-slate-600 truncate">{g.cliente_nome}</div>
+                      <div className="text-xs text-slate-500">{g.data_criacao?.split('T')[0]}</div>
+                    </button>
+                  ))
+                )}
+              </div>
             </div>
 
             {/* Modo: Single-produto vs Packing List */}
