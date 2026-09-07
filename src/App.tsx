@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppTab, ReceivingOrder, PalletSSCC, StockPosition, RuleConfig, AuditLog } from './types/wms';
 import {
   INITIAL_AUDIT_LOGS,
@@ -22,6 +22,20 @@ import { GuiaTransporte, PaletaExpedicao, ChecklistExpedicao, ComprovanteEmbarqu
 
 export default function App() {
   const [utilizador, setUtilizador] = useState<Utilizador | null>(lerSessao()?.utilizador ?? null);
+
+  // Dev phase: login automático se sem sessão
+  useEffect(() => {
+    if (!utilizador) {
+      fetch('/auth/dev-token')
+        .then(r => r.json())
+        .then(({ token, usuario }) => {
+          const { guardarSessao } = require('./api');
+          guardarSessao(token, usuario);
+          setUtilizador(usuario);
+        })
+        .catch(() => {});
+    }
+  }, []);
 
   return (
     <AppAutenticada
