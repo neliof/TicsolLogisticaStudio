@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { GuiaTransporte, PaletaExpedicao, LinhaGuia } from '../types/expedicao';
 import { PalletSSCC, RuleConfig } from '../types/wms';
+import { api } from '../api';
 import { generateSSCC, buildGS1128String, formatToGS1Date } from '../utils/gs1';
 import { GS1LabelPrintModal } from './GS1LabelPrintModal';
 import { BarcodeRenderer } from './BarcodeRenderer';
@@ -51,6 +52,12 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
   const [packingMode, setPackingMode] = useState(false);
   const [selectedLinhasIds, setSelectedLinhasIds] = useState<Set<string>>(new Set([selectedLinhaId]));
 
+  // Sync modal
+  const [showSyncModal, setShowSyncModal] = useState(false);
+  const [syncDataInicio, setSyncDataInicio] = useState('');
+  const [syncDataFim, setSyncDataFim] = useState('');
+  const [syncLoading, setSyncLoading] = useState(false);
+
 
   // Rule: Sonae MC caderno de encargos
   const activeRule = ruleConfigs.find(r => r.cliente_id === 'SONAE_MC') || ruleConfigs[0];
@@ -72,6 +79,21 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
   const excedeAltura = alturaPaleteCm > activeRule.altura_maxima_cm;
   const excedePeso = pesoBrutoKg > activeRule.peso_maximo_kg;
   const excedeQuantidade = caixasNaPaleteProposta > caixasSolicitadas;
+
+  const handleSync = async () => {
+    setSyncLoading(true);
+    try {
+      await api.sincronizarGuias(syncDataInicio || undefined, syncDataFim || undefined);
+      alert('Guias sincronizadas com sucesso!');
+      setShowSyncModal(false);
+      setSyncDataInicio('');
+      setSyncDataFim('');
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Falha ao sincronizar');
+    } finally {
+      setSyncLoading(false);
+    }
+  };
 
   const handleMaterializePallet = () => {
     if (!selectedGuia) return;
@@ -214,9 +236,18 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
           </p>
         </div>
 
-        <div className="flex items-center gap-2 bg-purple-50 border border-purple-200 px-3 py-1.5 rounded-lg text-xs font-mono text-purple-700">
-          <ShieldCheck className="w-4 h-4 text-purple-600" />
-          <span>Regra: <strong>{activeRule.cliente_nome}</strong></span>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 bg-purple-50 border border-purple-200 px-3 py-1.5 rounded-lg text-xs font-mono text-purple-700">
+            <ShieldCheck className="w-4 h-4 text-purple-600" />
+            <span>Regra: <strong>{activeRule.cliente_nome}</strong></span>
+          </div>
+          <button
+            onClick={() => setShowSyncModal(true)}
+            disabled={syncLoading}
+            className="px-3 py-1.5 bg-purple-600 text-white font-semibold text-sm rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-all whitespace-nowrap"
+          >
+            {syncLoading ? 'Sincronizando…' : 'Sincronizar Guias'}
+          </button>
         </div>
       </div>
 
@@ -506,6 +537,52 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
           </div>
         </div>
       </div>
+
+      {/* Sync Modal */}
+      {showSyncModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center rounded-lg z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full mx-4">
+            <h2 className="text-lg font-bold text-slate-900 mb-4">Sincronizar Guias do ARTSOFT</h2>
+            <div className="space-y-3 mb-6">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Data Início</label>
+                <input
+                  type="date"
+                  value={syncDataInicio}
+                  onChange={(e) => setSyncDataInicio(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Data Fim</label>
+                <input
+                  type="date"
+                  value={syncDataFim}
+                  onChange={(e) => setSyncDataFim(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+              <p className="text-xs text-slate-500">Deixa vazio para sincronizar todas as guias</p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowSyncModal(false)}
+                disabled={syncLoading}
+                className="flex-1 px-3 py-2 bg-slate-200 text-slate-700 font-semibold text-sm rounded-lg hover:bg-slate-300 disabled:opacity-50 transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSync}
+                disabled={syncLoading}
+                className="flex-1 px-3 py-2 bg-purple-600 text-white font-semibold text-sm rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-all"
+              >
+                {syncLoading ? 'A sincronizar…' : 'Sincronizar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

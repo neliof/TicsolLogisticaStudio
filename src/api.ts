@@ -159,8 +159,14 @@ export const api = {
     return pedir<ExecucaoSync[]>(`/rest/v1/sincronizacao_execucao?limit=${limite}`);
   },
 
-  sincronizarGuias() {
-    return pedir<ResultadoSync>('/api/artsoft/guias/sync', { method: 'POST' });
+  sincronizarGuias(dataInicio?: string, dataFim?: string) {
+    const body: any = {};
+    if (dataInicio) body.data_inicio = dataInicio;
+    if (dataFim) body.data_fim = dataFim;
+    return pedir<ResultadoSync>('/api/artsoft/guias/sync', {
+      method: 'POST',
+      body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined,
+    });
   },
 
   healthSync(empresaId: string) {

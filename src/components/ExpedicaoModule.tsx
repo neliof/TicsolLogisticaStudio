@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { GuiaTransporte, PaletaExpedicao, ComprovanteEmbarque } from '../types/expedicao';
+import { api } from '../api';
 import {
   Package,
   Truck,
@@ -34,6 +35,10 @@ export const ExpedicaoModule: React.FC<ExpedicaoModuleProps> = ({
   const [selectedGuiaId, setSelectedGuiaId] = useState<string>(guias[0]?.id || '');
   const [showEmbarqueForm, setShowEmbarqueForm] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('TODOS');
+  const [showSyncModal, setShowSyncModal] = useState(false);
+  const [syncDataInicio, setSyncDataInicio] = useState('');
+  const [syncDataFim, setSyncDataFim] = useState('');
+  const [syncLoading, setSyncLoading] = useState(false);
 
   const selectedGuia = guias.find(g => g.id === selectedGuiaId) || guias[0];
 
@@ -44,6 +49,22 @@ export const ExpedicaoModule: React.FC<ExpedicaoModuleProps> = ({
   const guiaPaletas = selectedGuia ? paletas.filter(p => p.guia_id === selectedGuia.id) : [];
 
   const filteredGuias = statusFilter === 'TODOS' ? guias : guias.filter(g => g.status === statusFilter);
+
+  const handleSync = async () => {
+    setSyncLoading(true);
+    try {
+      await api.sincronizarGuias(syncDataInicio || undefined, syncDataFim || undefined);
+      alert('Guias sincronizadas com sucesso!');
+      setShowSyncModal(false);
+      setSyncDataInicio('');
+      setSyncDataFim('');
+      // Recarregar seria ideal, mas depende de passarmos callback do App
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Falha ao sincronizar');
+    } finally {
+      setSyncLoading(false);
+    }
+  };
 
   const handleConfirmarPaletizacao = () => {
     if (!selectedGuia || guiaPaletas.length === 0) {
@@ -85,9 +106,18 @@ export const ExpedicaoModule: React.FC<ExpedicaoModuleProps> = ({
     <div className="space-y-6">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-lg">
-        <div className="flex items-center gap-3 mb-2">
-          <Truck className="w-6 h-6" />
-          <h1 className="text-2xl font-bold">Expedição — Imefar → Clientes</h1>
+        <div className="flex items-center justify-between gap-3 mb-2">
+          <div className="flex items-center gap-3">
+            <Truck className="w-6 h-6" />
+            <h1 className="text-2xl font-bold">Expedição — Imefar → Clientes</h1>
+          </div>
+          <button
+            onClick={() => setShowSyncModal(true)}
+            disabled={syncLoading}
+            className="px-3 py-1.5 bg-white text-blue-600 font-semibold text-sm rounded-lg hover:bg-blue-50 disabled:opacity-50 transition-all"
+          >
+            {syncLoading ? 'A sincronizar…' : 'Sincronizar Guias'}
+          </button>
         </div>
         <p className="text-blue-100">Paletização + Embarque para Sonae MC, Nívea, Tesa, Tena, etc</p>
       </div>
@@ -320,6 +350,52 @@ export const ExpedicaoModule: React.FC<ExpedicaoModuleProps> = ({
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Sync Modal */}
+      {showSyncModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center rounded-lg z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full mx-4">
+            <h2 className="text-lg font-bold text-slate-900 mb-4">Sincronizar Guias do ARTSOFT</h2>
+            <div className="space-y-3 mb-6">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Data Início</label>
+                <input
+                  type="date"
+                  value={syncDataInicio}
+                  onChange={(e) => setSyncDataInicio(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Data Fim</label>
+                <input
+                  type="date"
+                  value={syncDataFim}
+                  onChange={(e) => setSyncDataFim(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <p className="text-xs text-slate-500">Deixa vazio para sincronizar todas as guias</p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowSyncModal(false)}
+                disabled={syncLoading}
+                className="flex-1 px-3 py-2 bg-slate-200 text-slate-700 font-semibold text-sm rounded-lg hover:bg-slate-300 disabled:opacity-50 transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSync}
+                disabled={syncLoading}
+                className="flex-1 px-3 py-2 bg-blue-600 text-white font-semibold text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all"
+              >
+                {syncLoading ? 'A sincronizar…' : 'Sincronizar'}
+              </button>
+            </div>
           </div>
         </div>
       )}
