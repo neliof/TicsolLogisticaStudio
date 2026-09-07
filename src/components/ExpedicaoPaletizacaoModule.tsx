@@ -48,8 +48,8 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
   const [selectedLinhaId, setSelectedLinhaId] = useState<string>(selectedGuia?.linhas[0]?.id || '');
   const activeLinha = selectedGuia?.linhas.find(l => l.id === selectedLinhaId) || selectedGuia?.linhas[0];
 
-  // Packing List mode: multi-produto
-  const [packingMode, setPackingMode] = useState(false);
+  // Packing List mode: multi-produto (default true)
+  const [packingMode, setPackingMode] = useState(true);
   const [selectedLinhasIds, setSelectedLinhasIds] = useState<Set<string>>(new Set([selectedLinhaId]));
 
   // Sync modal
@@ -402,9 +402,13 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
                         }}
                         className="w-4 h-4 cursor-pointer"
                       />
-                      <span className="text-xs font-mono text-purple-700">
-                        {l.artigo_codigo} ({l.quantidade_solicitada} un, {l.temperatura_armazenamento})
-                      </span>
+                      <div className="flex-1">
+                        <span className="text-xs font-mono text-slate-700 block">
+                          {l.artigo_codigo} — {l.artigo_descricao}
+                        </span>
+                        <span className="text-xs text-purple-600 font-bold block">{l.quantidade_solicitada} un</span>
+                        {l.ean_barcode && <span className="text-xs text-purple-600">EAN: {l.ean_barcode}</span>}
+                      </div>
                     </label>
                   ))}
                 </div>
