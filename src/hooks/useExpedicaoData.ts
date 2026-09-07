@@ -5,19 +5,21 @@ import { api } from '../api';
 /** Mapeia uma linha_documento do ARTSOFT para LinhaGuia. */
 function linhaDocParaLinhaGuia(l: any, guiaId: string): LinhaGuia {
   const extra = l.dados_extra || {};
-  // quantidade: "1.000" (milhar), "6.00" (decimal), "6,50" (decimal), "1.000,50" (milhar+decimal)
-  // Heurística: 2 dígitos após último sep → decimal; 3+ → milhar
+  // quantidade: "1.000" (mil), "6.000" (6 com trailing zeros), "6.00" (6), "1,5" (1.5), "1.000,50" (mil+decimal)
+  // Heurística: se dígitos ANTES do sep ≤ 2 → é decimal (X.YYY); senão é milhar (1.000)
   const qtdStr = String(l.quantidade || '0').trim();
   const lastSepIdx = Math.max(qtdStr.lastIndexOf('.'), qtdStr.lastIndexOf(','));
   let qtd = qtdStr;
   if (lastSepIdx > -1) {
-    const digitsAfterSep = qtdStr.length - lastSepIdx - 1;
-    if (digitsAfterSep === 2) {
-      // Decimal: remover pontos anteriores, manter o último sep como ponto
+    const digitsBefore = lastSepIdx;
+    const digitsAfter = qtdStr.length - lastSepIdx - 1;
+
+    if (digitsBefore <= 2) {
+      // Poucos dígitos antes sep → decimal (X.YYY ou X,YY ou XX.YYY)
       const before = qtdStr.substring(0, lastSepIdx).replace(/\./g, '');
       qtd = before + '.' + qtdStr.substring(lastSepIdx + 1);
     } else {
-      // Milhar: remover todos pontos, converter vírgula para ponto
+      // 3+ dígitos antes → milhar (1.000 ou 1.000,50)
       qtd = qtdStr.replace(/\./g, '').replace(',', '.');
     }
   }
