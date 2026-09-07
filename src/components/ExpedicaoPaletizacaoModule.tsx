@@ -270,169 +270,179 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
         </div>
       </div>
 
-      {/* Grid: Inputs Calculator & Visual Stack Preview */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* Seleção de Guia + Produtos — largura total da página, para caber
+          mais linhas visíveis sem scroll apertado e o resumo ficar largo
+          em vez de espremido na coluna de 7/12. */}
+      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-5">
 
-        {/* Left Form: Select Guia & Linha & Packing Parameters (7 cols) */}
-        <div className="lg:col-span-7 space-y-6">
-          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-5">
+        {/* Seleção Guia com Filtro e Ordenação */}
+        <div>
+          <label className="text-slate-700 block mb-2 font-medium text-sm">1. Selecionar Guia de Transporte</label>
 
-            {/* Seleção Guia com Filtro e Ordenação */}
-            <div>
-              <label className="text-slate-700 block mb-2 font-medium text-sm">1. Selecionar Guia de Transporte</label>
+          <div className="grid grid-cols-1 md:grid-cols-[2fr_auto] gap-2 mb-2">
+            {/* Filtro */}
+            <input
+              type="text"
+              placeholder="Procura número ou cliente…"
+              value={filterText}
+              onChange={(e) => setFilterText(e.target.value)}
+              className="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm focus:outline-none focus:border-purple-500"
+            />
 
-              {/* Filtro */}
-              <input
-                type="text"
-                placeholder="Procura número ou cliente…"
-                value={filterText}
-                onChange={(e) => setFilterText(e.target.value)}
-                className="w-full bg-white border border-slate-300 rounded-lg p-2 mb-2 text-sm focus:outline-none focus:border-purple-500"
-              />
-
-              {/* Ordenação */}
-              <div className="flex gap-2 mb-2">
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
-                  className="flex-1 bg-slate-50 border border-slate-300 rounded-lg p-1.5 text-xs focus:outline-none focus:border-purple-500"
-                >
-                  <option value="numero">Número</option>
-                  <option value="cliente">Cliente</option>
-                  <option value="data">Data</option>
-                </select>
-                <button
-                  onClick={() => setSortDir(sortDir === 'asc' ? 'desc' : 'asc')}
-                  className="px-2 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 transition-all"
-                >
-                  {sortDir === 'asc' ? '↑' : '↓'}
-                </button>
-              </div>
-
-              {/* Lista de Guias */}
-              <div className="border border-slate-300 rounded-lg bg-white max-h-48 overflow-y-auto">
-                {guiasSorted.length === 0 ? (
-                  <div className="p-3 text-center text-sm text-slate-500">Nenhuma guia encontrada</div>
-                ) : (
-                  guiasSorted.map(g => (
-                    <button
-                      key={g.id}
-                      onClick={() => setSelectedGuiaId(g.id)}
-                      className={`w-full text-left p-3 border-b border-slate-100 hover:bg-slate-50 transition-all text-sm ${
-                        selectedGuiaId === g.id ? 'bg-purple-50 border-l-4 border-l-purple-600' : ''
-                      }`}
-                    >
-                      <div className="font-mono font-bold text-purple-700">{g.numero_guia}</div>
-                      <div className="text-xs text-slate-600 truncate">{g.cliente_nome}</div>
-                      <div className="text-xs text-slate-500">{g.data_criacao?.split('T')[0]}</div>
-                    </button>
-                  ))
-                )}
-              </div>
+            {/* Ordenação */}
+            <div className="flex gap-2">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="flex-1 md:w-40 bg-slate-50 border border-slate-300 rounded-lg p-1.5 text-xs focus:outline-none focus:border-purple-500"
+              >
+                <option value="numero">Número</option>
+                <option value="cliente">Cliente</option>
+                <option value="data">Data</option>
+              </select>
+              <button
+                onClick={() => setSortDir(sortDir === 'asc' ? 'desc' : 'asc')}
+                className="px-2 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 transition-all"
+              >
+                {sortDir === 'asc' ? '↑' : '↓'}
+              </button>
             </div>
+          </div>
 
-            {/* Modo: Single-produto vs Packing List */}
-            {selectedGuia && selectedGuia.linhas.length > 1 && (
-              <div>
-                <label className="text-slate-700 block mb-2 font-medium text-sm">Modo Paletização</label>
-                <div className="flex gap-3">
+          {/* Lista de Guias — grid uniforme em vez de lista empilhada, para
+              aproveitar a largura total e mostrar mais guias de uma vez. */}
+          <div className="border border-slate-300 rounded-lg bg-white max-h-80 overflow-y-auto p-2">
+            {guiasSorted.length === 0 ? (
+              <div className="p-3 text-center text-sm text-slate-500">Nenhuma guia encontrada</div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                {guiasSorted.map(g => (
                   <button
-                    onClick={() => setPackingMode(false)}
-                    className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm transition-all ${
-                      !packingMode
-                        ? 'bg-purple-600 text-white border-2 border-purple-700'
-                        : 'bg-slate-100 text-slate-700 border-2 border-transparent hover:bg-slate-200'
+                    key={g.id}
+                    onClick={() => setSelectedGuiaId(g.id)}
+                    className={`text-left p-3 rounded-lg border transition-all text-sm ${
+                      selectedGuiaId === g.id
+                        ? 'bg-purple-50 border-purple-400 ring-1 ring-purple-400'
+                        : 'bg-white border-slate-200 hover:bg-slate-50 hover:border-slate-300'
                     }`}
                   >
-                    Mono-Produto
+                    <div className="font-mono font-bold text-purple-700">{g.numero_guia}</div>
+                    <div className="text-xs text-slate-600 truncate">{g.cliente_nome}</div>
+                    <div className="text-xs text-slate-500">{g.data_criacao?.split('T')[0]}</div>
                   </button>
-                  <button
-                    onClick={() => setPackingMode(true)}
-                    className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm transition-all ${
-                      packingMode
-                        ? 'bg-purple-600 text-white border-2 border-purple-700'
-                        : 'bg-slate-100 text-slate-700 border-2 border-transparent hover:bg-slate-200'
-                    }`}
-                  >
-                    Packing List (Multi)
-                  </button>
-                </div>
+                ))}
               </div>
             )}
+          </div>
+        </div>
 
-            {/* Seleção Linha(s) */}
-            {selectedGuia && !packingMode && (
-              <div>
-                <label className="text-slate-700 block mb-2 font-medium text-sm">Linha de Produto</label>
-                <select
-                  value={selectedLinhaId}
-                  onChange={(e) => {
-                    setSelectedLinhaId(e.target.value);
-                    setSelectedLinhasIds(new Set([e.target.value]));
-                  }}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 font-mono text-purple-700 font-bold focus:outline-none focus:border-purple-500"
-                >
-                  {selectedGuia.linhas.map(l => (
-                    <option key={l.id} value={l.id}>
-                      {l.artigo_codigo} - {l.artigo_descricao.slice(0, 30)}...
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+        {/* Modo: Single-produto vs Packing List */}
+        {selectedGuia && selectedGuia.linhas.length > 1 && (
+          <div>
+            <label className="text-slate-700 block mb-2 font-medium text-sm">Modo Paletização</label>
+            <div className="flex gap-3 max-w-md">
+              <button
+                onClick={() => setPackingMode(false)}
+                className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm transition-all ${
+                  !packingMode
+                    ? 'bg-purple-600 text-white border-2 border-purple-700'
+                    : 'bg-slate-100 text-slate-700 border-2 border-transparent hover:bg-slate-200'
+                }`}
+              >
+                Mono-Produto
+              </button>
+              <button
+                onClick={() => setPackingMode(true)}
+                className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm transition-all ${
+                  packingMode
+                    ? 'bg-purple-600 text-white border-2 border-purple-700'
+                    : 'bg-slate-100 text-slate-700 border-2 border-transparent hover:bg-slate-200'
+                }`}
+              >
+                Packing List (Multi)
+              </button>
+            </div>
+          </div>
+        )}
 
-            {/* Packing List: Multi-selection */}
-            {selectedGuia && packingMode && (
-              <div>
-                <label className="text-slate-700 block mb-2 font-medium text-sm">Selecionar Produtos (Ctrl+Click)</label>
-                <div className="space-y-2 max-h-48 overflow-y-auto bg-slate-50 p-3 rounded-lg border border-slate-300">
-                  {selectedGuia.linhas.map(l => (
-                    <label key={l.id} className="flex items-center gap-2 cursor-pointer hover:bg-white p-2 rounded">
-                      <input
-                        type="checkbox"
-                        checked={selectedLinhasIds.has(l.id)}
-                        onChange={(e) => {
-                          const newIds = new Set(selectedLinhasIds);
-                          if (e.target.checked) {
-                            newIds.add(l.id);
-                          } else {
-                            newIds.delete(l.id);
-                          }
-                          setSelectedLinhasIds(newIds);
-                        }}
-                        className="w-4 h-4 cursor-pointer"
-                      />
-                      <div className="flex-1">
-                        <span className="text-xs font-mono text-slate-700 block">
-                          {l.artigo_codigo} — {l.artigo_descricao}
-                        </span>
-                        <span className="text-xs text-purple-600 font-bold block">{l.quantidade_solicitada} un</span>
-                        {l.ean_barcode && <span className="text-xs text-purple-600">EAN: {l.ean_barcode}</span>}
-                      </div>
-                    </label>
-                  ))}
-                </div>
-                <div className="mt-2 text-xs text-slate-600 bg-blue-50 p-2 rounded border border-blue-200">
-                  ✓ Selecionadas: {selectedLinhasIds.size} | Total: {Array.from(selectedLinhasIds).reduce((sum, id) => {
-                    const l = selectedGuia.linhas.find(x => x.id === id);
-                    return sum + (l?.quantidade_solicitada || 0);
-                  }, 0)} unidades
-                </div>
-              </div>
-            )}
+        {/* Seleção Linha(s) */}
+        {selectedGuia && !packingMode && (
+          <div className="max-w-md">
+            <label className="text-slate-700 block mb-2 font-medium text-sm">Linha de Produto</label>
+            <select
+              value={selectedLinhaId}
+              onChange={(e) => {
+                setSelectedLinhaId(e.target.value);
+                setSelectedLinhasIds(new Set([e.target.value]));
+              }}
+              className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 font-mono text-purple-700 font-bold focus:outline-none focus:border-purple-500"
+            >
+              {selectedGuia.linhas.map(l => (
+                <option key={l.id} value={l.id}>
+                  {l.artigo_codigo} - {l.artigo_descricao.slice(0, 30)}...
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
-            {/* Linha Summary — Completo. Modo single: só a linha ativa.
-                Modo packing: todas as linhas selecionadas, para que
-                selecionar várias no quadro anterior mostre todas aqui
-                (antes só a linha[0] aparecia, nunca as outras). */}
+        {/* Packing List: Multi-selection — grid uniforme e mais alto para
+            caber mais produtos visíveis de uma vez. */}
+        {selectedGuia && packingMode && (
+          <div>
+            <label className="text-slate-700 block mb-2 font-medium text-sm">Selecionar Produtos (Ctrl+Click)</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 max-h-96 overflow-y-auto bg-slate-50 p-3 rounded-lg border border-slate-300">
+              {selectedGuia.linhas.map(l => (
+                <label key={l.id} className="flex items-center gap-2 cursor-pointer hover:bg-white p-2 rounded border border-transparent hover:border-slate-200">
+                  <input
+                    type="checkbox"
+                    checked={selectedLinhasIds.has(l.id)}
+                    onChange={(e) => {
+                      const newIds = new Set(selectedLinhasIds);
+                      if (e.target.checked) {
+                        newIds.add(l.id);
+                      } else {
+                        newIds.delete(l.id);
+                      }
+                      setSelectedLinhasIds(newIds);
+                    }}
+                    className="w-4 h-4 cursor-pointer shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs font-mono text-slate-700 block truncate">
+                      {l.artigo_codigo} — {l.artigo_descricao}
+                    </span>
+                    <span className="text-xs text-purple-600 font-bold block">{l.quantidade_solicitada} un</span>
+                    {l.ean_barcode && <span className="text-xs text-purple-600">EAN: {l.ean_barcode}</span>}
+                  </div>
+                </label>
+              ))}
+            </div>
+            <div className="mt-2 text-xs text-slate-600 bg-blue-50 p-2 rounded border border-blue-200">
+              ✓ Selecionadas: {selectedLinhasIds.size} | Total: {Array.from(selectedLinhasIds).reduce((sum, id) => {
+                const l = selectedGuia.linhas.find(x => x.id === id);
+                return sum + (l?.quantidade_solicitada || 0);
+              }, 0)} unidades
+            </div>
+          </div>
+        )}
+
+        {/* Linha Summary — Completo, em grid largo aproveitando a página
+            inteira. Modo single: só a linha ativa. Modo packing: todas as
+            linhas selecionadas (antes só a linha[0] aparecia). */}
+        {(packingMode
+          ? selectedGuia?.linhas.filter(l => selectedLinhasIds.has(l.id)) || []
+          : activeLinha ? [activeLinha] : []
+        ).length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {(packingMode
               ? selectedGuia?.linhas.filter(l => selectedLinhasIds.has(l.id)) || []
               : activeLinha ? [activeLinha] : []
             ).map(linha => (
               <div key={linha.id} className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3 font-mono text-xs">
-                <div className="flex justify-between text-slate-700">
-                  <span>Artigo: <strong>{linha.artigo_descricao}</strong></span>
-                  <span>EAN: <strong className="text-purple-600">{linha.ean_barcode}</strong></span>
+                <div className="flex justify-between gap-2 text-slate-700">
+                  <span className="truncate">Artigo: <strong>{linha.artigo_descricao}</strong></span>
+                  <span className="shrink-0">EAN: <strong className="text-purple-600">{linha.ean_barcode}</strong></span>
                 </div>
 
                 {/* Linha 1: Número, Quantidade, Temperatura */}
@@ -494,6 +504,16 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
                 </div>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* Grid: Inputs Calculator & Visual Stack Preview */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        {/* Left Form: Packing Parameters (7 cols) */}
+        <div className="lg:col-span-7 space-y-6">
+          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-5">
 
             {/* Pallet Stacking Parameters */}
             <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2 border-b border-slate-200 pb-3 pt-2">
