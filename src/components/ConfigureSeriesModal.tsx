@@ -13,6 +13,7 @@ type SeriesWithType = {
   code: string;
   type: 'Entrada' | 'Saida' | 'Venda' | 'Encomenda_Cliente' | 'Encomenda_Fornecedor' | 'Outro';
   typeName: string;
+  docNome?: string;
 };
 
 const typeOrder = ['Entrada', 'Saida', 'Venda', 'Encomenda_Cliente', 'Encomenda_Fornecedor', 'Outro'];
@@ -198,7 +199,7 @@ export const ConfigureSeriesModal: React.FC<ConfigureSeriesModalProps> = ({ isOp
                   <div className="text-xs font-bold text-slate-600 px-2 py-1 bg-slate-100 rounded">
                     {group.series[0].typeName}
                   </div>
-                  <div className="grid grid-cols-2 gap-2 ml-2">
+                  <div className="grid grid-cols-1 gap-2 ml-2">
                     {group.series.map(s => (
                       <label key={s.code} className="flex items-center gap-2 cursor-pointer">
                         <input
@@ -207,7 +208,10 @@ export const ConfigureSeriesModal: React.FC<ConfigureSeriesModalProps> = ({ isOp
                           onChange={() => handleToggleSerie(s.code)}
                           className="rounded border-slate-300"
                         />
-                        <span className="text-sm text-slate-700 font-mono">{s.code}</span>
+                        <div className="text-sm text-slate-700">
+                          <span className="font-mono font-semibold">{s.code}</span>
+                          {s.docNome && <span className="text-slate-600 ml-2">— {s.docNome}</span>}
+                        </div>
                       </label>
                     ))}
                   </div>
