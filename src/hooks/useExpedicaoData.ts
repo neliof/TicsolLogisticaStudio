@@ -70,6 +70,7 @@ function docParaGuia(d: any): GuiaTransporte {
   return {
     id: d.id,
     numero_guia: d.numero || d.origem_doc_id || '',
+    serie: d.origem_serie || undefined,  // Série ARTSOFT para filtrar por módulo
     cliente_nome: x.terceiro_nome || '',
     cliente_nif: x.terceiro_nif || '',
     morada_entrega: x.morada_descarga || x.terceiro_morada || '',

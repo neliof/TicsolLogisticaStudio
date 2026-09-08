@@ -6,6 +6,7 @@ import {
 } from './data/mockData';
 import { lerSessao, terminarSessao, Utilizador } from './api';
 import { useRegras } from './hooks/useRegras';
+import { useSeriesConfig } from './hooks/useSeriesConfig';
 import { Navbar } from './components/Navbar';
 import { RececaoModule } from './components/RececaoModule';
 import { PaletizacaoModule } from './components/PaletizacaoModule';
@@ -57,6 +58,10 @@ function AppAutenticada({
 }) {
   const [activeTab, setActiveTab] = useState<AppTab>('rececao');
   const [selectedTenant, setSelectedTenant] = useState<string>('TicSol_HuB (Sonae MC)');
+
+  // Series Config — Load configurations for both modules
+  const receçãoConfig = useSeriesConfig('receção');
+  const expedicãoConfig = useSeriesConfig('expedição');
 
   // WMS Main State Collections — Real data from API + fallback to mock
   const { orders, pallets, stock: stockList, loading: wmsLoading, error: wmsError, setOrders, setPallets, setStock: setStockList } = useWMSData();
@@ -231,6 +236,25 @@ function AppAutenticada({
     setAuditLogs(prev => [log, ...prev]);
   };
 
+  // Filter guias by active module's configured series
+  const getFilteredGuias = () => {
+    // Determine which config to use based on active tab
+    const config = activeTab === 'paletizacao_expedicao' || activeTab === 'expedicao'
+      ? expedicãoConfig
+      : receçãoConfig;
+
+    // Get the series filter for the current module
+    const seriesFilter = config.modulo === 'expedição' ? config.expedição : config.receção;
+
+    // If no series configured for this module, show all (backward compatibility)
+    if (seriesFilter.length === 0) return guiasEntrada;
+
+    // Filter guias by configured series
+    return guiasEntrada.filter(g => g.serie && seriesFilter.includes(g.serie));
+  };
+
+  const filteredGuias = getFilteredGuias();
+
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-800 flex flex-col font-sans">
       
@@ -328,7 +352,7 @@ function AppAutenticada({
         {/* Tab 2.5: Paletização Expedição (Auto-grupo temperatura) */}
         {activeTab === 'paletizacao_expedicao' && (
           <ExpedicaoPaletizacaoModule
-            guias={guiasEntrada}
+            guias={filteredGuias}
             ruleConfigs={rules}
             selectedTenant={selectedTenant}
             onPalletCreated={handleCreatePaletaExpedicao}
@@ -349,7 +373,7 @@ function AppAutenticada({
         {/* Tab 4: Expedição (Imefar → Clientes) */}
         {activeTab === 'expedicao' && (
           <ExpedicaoModule
-            guias={guiasEntrada}
+            guias={filteredGuias}
             paletas={paletasExpedicao}
             comprovantes={comprovantesEmbarque}
             onConfirmGuia={handleConfirmGuiaPaletizacao}
