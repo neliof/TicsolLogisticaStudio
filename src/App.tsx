@@ -236,7 +236,7 @@ function AppAutenticada({
     setAuditLogs(prev => [log, ...prev]);
   };
 
-  // Filter guias by active module's configured series
+  // Filter documents by active module's configured series
   const getFilteredGuias = () => {
     // Determine which config to use based on active tab
     const config = activeTab === 'paletizacao_expedicao' || activeTab === 'expedicao'
@@ -253,7 +253,22 @@ function AppAutenticada({
     return guiasEntrada.filter(g => g.serie && seriesFilter.includes(g.serie));
   };
 
+  // Filter receiving orders by series (extract series from numero_guia format: "GR-88421/2026" → "GR")
+  const getFilteredOrders = () => {
+    const seriesFilter = receçãoConfig.receção;
+
+    // If no series configured for receção, show all (backward compatibility)
+    if (seriesFilter.length === 0) return orders;
+
+    // Extract series from numero_guia (e.g., "GR-88421/2026" → "GR")
+    return orders.filter(o => {
+      const seriePart = o.numero_guia?.split('-')[0]; // Get first part before dash
+      return seriePart && seriesFilter.includes(seriePart);
+    });
+  };
+
   const filteredGuias = getFilteredGuias();
+  const filteredOrders = getFilteredOrders();
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-800 flex flex-col font-sans">
@@ -328,7 +343,7 @@ function AppAutenticada({
         {/* Tab 1: Receção */}
         {activeTab === 'rececao' && (
           <RececaoModule
-            orders={orders}
+            orders={filteredOrders}
             onUpdateOrders={setOrders}
             onNavigateToPaletizacao={handleNavigateToPaletizacao}
             onOpenScanner={() => setIsScannerOpen(true)}
