@@ -237,7 +237,7 @@ export const api = {
   },
 
   deleteTestData() {
-    return pedir<{ success: boolean; deleted: {documentos: number; linhas: number; artigos: number; terceiros: number} }>('/api/artsoft/test-data', {
+    return pedir<{ success: boolean; deleted: {documentos: number} }>('/api/artsoft/test-data', {
       method: 'DELETE'
     });
   },

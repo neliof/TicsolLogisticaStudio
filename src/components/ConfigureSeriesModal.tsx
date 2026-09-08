@@ -98,14 +98,14 @@ export const ConfigureSeriesModal: React.FC<ConfigureSeriesModalProps> = ({ isOp
   };
 
   const handleDeleteTestData = async () => {
-    if (!confirm('Isto vai apagar TODOS os documentos, artigos e clientes de teste. Continua?')) {
+    if (!confirm('Isto vai apagar TODOS os documentos de teste. Continua?')) {
       return;
     }
     try {
       setDeleting(true);
       setError(null);
       const result = await api.deleteTestData();
-      setSuccess(`Dados de teste apagados: ${result.deleted.documentos} documentos, ${result.deleted.artigos} artigos, ${result.deleted.terceiros} clientes.`);
+      setSuccess(`Dados de teste apagados: ${result.deleted.documentos} documentos.`);
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       setError(`Erro ao apagar dados: ${err instanceof Error ? err.message : 'Erro desconhecido'}`);
