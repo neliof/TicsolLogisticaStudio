@@ -74,6 +74,25 @@ export const PaletizacaoModule: React.FC<PaletizacaoModuleProps> = ({
   const excedePeso = pesoBrutoKg > activeRule.peso_maximo_kg;
   const excedeQuantidadeRestante = caixasNaPaleteProposta > caixasRestantesParaPaletizar;
 
+  // Guard: No orders loaded
+  if (!orders || orders.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-slate-900">Nenhuma Encomenda de Receção Disponível</h3>
+              <p className="text-sm text-slate-600 mt-1">
+                Sincroniza encomendas de receção da ARTSOFT ou do sistema logístico para começar a paletizar.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const handleMaterializePallet = () => {
     if (!activeLine || !selectedOrder) return;
     if (excedeQuantidadeRestante) {
