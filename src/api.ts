@@ -221,7 +221,25 @@ export const api = {
   },
 
   discover_artsoft_series() {
-    return pedir<{ series: string[]; total: number }>('/api/artsoft/series/discover');
+    return pedir<{ series: Array<{code: string; type: 'Entrada'|'Saida'|'Venda'|'Encomenda_Cliente'|'Encomenda_Fornecedor'; typeName: string}>; total: number; message?: string }>('/api/artsoft/series/discover');
+  },
+
+  getSeriesConfig(modulo: string) {
+    return pedir<{ modulo: string; receção: string[]; expedição: string[]; updated_at: string | null }>(`/api/artsoft/series/config/${encodeURIComponent(modulo)}`);
+  },
+
+  saveSeriesConfig(modulo: string, receção: string[], expedição: string[]) {
+    return pedir<{ success: boolean; modulo: string }>('/api/artsoft/series/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ modulo, receção, expedição })
+    });
+  },
+
+  deleteTestData() {
+    return pedir<{ success: boolean; deleted: {documentos: number; linhas: number; artigos: number; terceiros: number} }>('/api/artsoft/test-data', {
+      method: 'DELETE'
+    });
   },
 
   save_artsoft_series(payload: { series: string[] }) {
