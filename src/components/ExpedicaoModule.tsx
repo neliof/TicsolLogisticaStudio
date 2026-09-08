@@ -103,9 +103,9 @@ export const ExpedicaoModule: React.FC<ExpedicaoModuleProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-4 h-screen">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-lg">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-lg shrink-0">
         <div className="flex items-center justify-between gap-3 mb-2">
           <div className="flex items-center gap-3">
             <Truck className="w-6 h-6" />
@@ -123,7 +123,7 @@ export const ExpedicaoModule: React.FC<ExpedicaoModuleProps> = ({
       </div>
 
       {/* Main 3-Column Layout */}
-      <div className="grid grid-cols-3 gap-4 max-h-96">
+      <div className="grid grid-cols-3 gap-4 flex-1 min-h-0 overflow-hidden">
         {/* Column 1: Guias List */}
         <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden flex flex-col h-full">
           <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex items-center justify-between">
