@@ -292,56 +292,49 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
         <div>
           <label className="text-slate-700 block mb-2 font-medium text-sm">1. Selecionar Guia de Transporte</label>
 
-          <div className="grid grid-cols-1 md:grid-cols-[2fr_auto] gap-2 mb-2">
-            {/* Filtro */}
+          <div className="flex gap-1 mb-2">
             <input
               type="text"
-              placeholder="Procura número ou cliente…"
+              placeholder="Procura…"
               value={filterText}
               onChange={(e) => setFilterText(e.target.value)}
-              className="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm focus:outline-none focus:border-purple-500"
+              className="flex-1 bg-white border border-slate-300 rounded p-1.5 text-xs focus:outline-none focus:border-purple-500"
             />
-
-            {/* Ordenação */}
-            <div className="flex gap-2">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="flex-1 md:w-40 bg-slate-50 border border-slate-300 rounded-lg p-1.5 text-xs focus:outline-none focus:border-purple-500"
-              >
-                <option value="numero">Número</option>
-                <option value="cliente">Cliente</option>
-                <option value="data">Data</option>
-              </select>
-              <button
-                onClick={() => setSortDir(sortDir === 'asc' ? 'desc' : 'asc')}
-                className="px-2 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 transition-all"
-              >
-                {sortDir === 'asc' ? '↑' : '↓'}
-              </button>
-            </div>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="bg-slate-50 border border-slate-300 rounded p-1.5 text-xs focus:outline-none focus:border-purple-500"
+            >
+              <option value="numero">Nº</option>
+              <option value="cliente">Cliente</option>
+              <option value="data">Data</option>
+            </select>
+            <button
+              onClick={() => setSortDir(sortDir === 'asc' ? 'desc' : 'asc')}
+              className="px-2 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded text-xs font-semibold text-slate-700"
+            >
+              {sortDir === 'asc' ? '↑' : '↓'}
+            </button>
           </div>
 
-          {/* Lista de Guias — grid uniforme em vez de lista empilhada, para
-              aproveitar a largura total e mostrar mais guias de uma vez. */}
-          <div className="border border-slate-300 rounded-lg bg-white max-h-80 overflow-y-auto p-2">
+          {/* Lista de Guias */}
+          <div className="border border-slate-300 rounded bg-white max-h-48 overflow-y-auto p-1">
             {guiasSorted.length === 0 ? (
-              <div className="p-3 text-center text-sm text-slate-500">Nenhuma guia encontrada</div>
+              <div className="p-2 text-center text-xs text-slate-500">Nenhuma guia</div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1">
                 {guiasSorted.map(g => (
                   <button
                     key={g.id}
                     onClick={() => setSelectedGuiaId(g.id)}
-                    className={`text-left p-3 rounded-lg border transition-all text-sm ${
+                    className={`text-left p-1.5 rounded text-xs border transition-all ${
                       selectedGuiaId === g.id
-                        ? 'bg-purple-50 border-purple-400 ring-1 ring-purple-400'
-                        : 'bg-white border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+                        ? 'bg-purple-50 border-purple-400'
+                        : 'bg-white border-slate-200 hover:bg-slate-50'
                     }`}
                   >
-                    <div className="font-mono font-bold text-purple-700">{g.numero_guia}</div>
-                    <div className="text-xs text-slate-600 truncate">{g.cliente_nome}</div>
-                    <div className="text-xs text-slate-500">{g.data_criacao?.split('T')[0]}</div>
+                    <div className="font-mono font-bold text-purple-700 text-[11px]">{g.numero_guia}</div>
+                    <div className="text-[10px] text-slate-600 truncate">{g.cliente_nome}</div>
                   </button>
                 ))}
               </div>
@@ -399,118 +392,75 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
           </div>
         )}
 
-        {/* Packing List: Multi-selection — grid uniforme e mais alto para
-            caber mais produtos visíveis de uma vez. */}
+        {/* Packing List: Multi-selection — layout horizontal compacto */}
         {selectedGuia && packingMode && (
           <div>
-            <label className="text-slate-700 block mb-2 font-medium text-sm">Selecionar Produtos (Ctrl+Click)</label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 max-h-96 overflow-y-auto bg-slate-50 p-3 rounded-lg border border-slate-300">
-              {selectedGuia.linhas.map(l => (
-                <label key={l.id} className="flex items-center gap-2 cursor-pointer hover:bg-white p-2 rounded border border-transparent hover:border-slate-200">
-                  <input
-                    type="checkbox"
-                    checked={selectedLinhasIds.has(l.id)}
-                    onChange={(e) => {
-                      const newIds = new Set(selectedLinhasIds);
-                      if (e.target.checked) {
-                        newIds.add(l.id);
-                      } else {
-                        newIds.delete(l.id);
-                      }
-                      setSelectedLinhasIds(newIds);
-                    }}
-                    className="w-4 h-4 cursor-pointer shrink-0"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <span className="text-xs font-mono text-slate-700 block truncate">
-                      {l.artigo_codigo} — {l.artigo_descricao}
-                    </span>
-                    <span className="text-xs text-purple-600 font-bold block">{l.quantidade_solicitada} un</span>
-                    {l.ean_barcode && <span className="text-xs text-purple-600">EAN: {l.ean_barcode}</span>}
-                  </div>
-                </label>
-              ))}
+            <label className="text-slate-700 block mb-2 font-medium text-sm">2. Selecionar Produtos</label>
+            <div className="border border-slate-300 rounded-lg bg-white max-h-56 overflow-y-auto p-2">
+              <div className="space-y-1">
+                {selectedGuia.linhas.map(l => (
+                  <label key={l.id} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-2 rounded text-xs">
+                    <input
+                      type="checkbox"
+                      checked={selectedLinhasIds.has(l.id)}
+                      onChange={(e) => {
+                        const newIds = new Set(selectedLinhasIds);
+                        if (e.target.checked) {
+                          newIds.add(l.id);
+                        } else {
+                          newIds.delete(l.id);
+                        }
+                        setSelectedLinhasIds(newIds);
+                      }}
+                      className="w-4 h-4 cursor-pointer shrink-0"
+                    />
+                    <span className="font-mono font-bold text-slate-700 w-8">{l.nr_linha || '—'}</span>
+                    <span className="font-mono text-slate-700 w-16">{l.artigo_codigo}</span>
+                    <span className="text-slate-600 flex-1 truncate">{l.artigo_descricao}</span>
+                    <span className="text-purple-600 font-bold w-24 text-right">{l.quantidade_solicitada} un</span>
+                  </label>
+                ))}
+              </div>
             </div>
-            <div className="mt-2 text-xs text-slate-600 bg-blue-50 p-2 rounded border border-blue-200">
+            <div className="mt-1 text-xs text-slate-600">
               ✓ Selecionadas: {selectedLinhasIds.size} | Total: {Array.from(selectedLinhasIds).reduce((sum, id) => {
                 const l = selectedGuia.linhas.find(x => x.id === id);
                 return sum + (l?.quantidade_solicitada || 0);
-              }, 0)} unidades
+              }, 0)} un
             </div>
           </div>
         )}
 
-        {/* Linha Summary — Completo, em grid largo aproveitando a página
-            inteira. Modo single: só a linha ativa. Modo packing: todas as
-            linhas selecionadas (antes só a linha[0] aparecia). */}
+        {/* Produtos Selecionados — layout compacto uma linha por produto */}
         {linhasSelecionadas.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {linhasSelecionadas.map(linha => (
-              <div key={linha.id} className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3 font-mono text-xs">
-                <div className="flex justify-between gap-2 text-slate-700">
-                  <span className="truncate">Artigo: <strong>{linha.artigo_descricao}</strong></span>
-                  <span className="shrink-0">EAN: <strong className="text-purple-600">{linha.ean_barcode}</strong></span>
+          <div>
+            <label className="text-slate-700 block mb-2 font-medium text-sm">3. Produtos Selecionados</label>
+            <div className="border border-slate-300 rounded-lg bg-white max-h-56 overflow-y-auto p-0">
+              <div className="text-xs">
+                {/* Header */}
+                <div className="flex gap-1 bg-slate-100 border-b border-slate-300 sticky top-0 p-2 font-bold text-slate-700">
+                  <div className="w-8">NR.</div>
+                  <div className="w-16">CÓDIGO</div>
+                  <div className="flex-1">DESCRIÇÃO</div>
+                  <div className="w-24">EAN</div>
+                  <div className="w-14 text-right">QTD</div>
+                  <div className="w-16">LOTE</div>
+                  <div className="w-16">VALIDADE</div>
                 </div>
-
-                {/* Linha 1: Número, Quantidade, Temperatura */}
-                <div className="grid grid-cols-3 gap-2 bg-white p-2.5 rounded-lg border border-slate-200 text-center shadow-xs">
-                  <div>
-                    <span className="text-[10px] text-slate-500 block">NR. LINHA</span>
-                    <span className="text-sm font-bold text-slate-800">{linha.nr_linha || '—'}</span>
+                {/* Rows */}
+                {linhasSelecionadas.map(linha => (
+                  <div key={linha.id} className="flex gap-1 border-b border-slate-200 p-2 hover:bg-slate-50 items-center font-mono">
+                    <div className="w-8">{linha.nr_linha || '—'}</div>
+                    <div className="w-16 text-purple-600 font-bold">{linha.artigo_codigo}</div>
+                    <div className="flex-1 truncate text-slate-700">{linha.artigo_descricao}</div>
+                    <div className="w-24 text-slate-600 text-[11px]">{linha.ean_barcode || '—'}</div>
+                    <div className="w-14 text-right text-purple-700 font-bold">{linha.quantidade_solicitada}</div>
+                    <div className="w-16 text-slate-700">{linha.lote || '—'}</div>
+                    <div className="w-16 text-slate-700">{linha.data_validade || '—'}</div>
                   </div>
-                  <div>
-                    <span className="text-[10px] text-slate-500 block">QTD SOLICITADA</span>
-                    <span className="text-sm font-bold text-slate-800">{linha.quantidade_solicitada} Cx</span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-purple-600 block">TEMPERATURA</span>
-                    <span className="text-sm font-bold text-purple-700">{linha.temperatura_armazenamento}</span>
-                  </div>
-                </div>
-
-                {/* Linha 2: Valores (se existirem) */}
-                {(linha.valor_unitario || linha.total_liquido) && (
-                  <div className="grid grid-cols-4 gap-2 bg-white p-2.5 rounded-lg border border-slate-200 text-center shadow-xs">
-                    <div>
-                      <span className="text-[10px] text-slate-500 block">VALOR UNIT.</span>
-                      <span className="text-sm font-bold text-slate-800">
-                        {linha.valor_unitario ? `€${linha.valor_unitario.toFixed(2)}` : '—'}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-slate-500 block">IVA %</span>
-                      <span className="text-sm font-bold text-slate-800">
-                        {linha.iva_percentual ? `${linha.iva_percentual.toFixed(1)}%` : '—'}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-slate-500 block">DESCONTO %</span>
-                      <span className="text-sm font-bold text-slate-800">
-                        {linha.desconto_percentual ? `${linha.desconto_percentual.toFixed(1)}%` : '—'}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-slate-500 block">TOTAL LÍQUIDO</span>
-                      <span className="text-sm font-bold text-emerald-700">
-                        {linha.total_liquido ? `€${linha.total_liquido.toFixed(2)}` : '—'}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Linha 3: Agregação (Lote, Validade) */}
-                <div className="grid grid-cols-2 gap-2 bg-white p-2.5 rounded-lg border border-slate-200 text-center shadow-xs">
-                  <div>
-                    <span className="text-[10px] text-slate-500 block">LOTE</span>
-                    <span className="text-sm font-bold text-slate-800">{linha.lote || '—'}</span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-slate-500 block">VALIDADE</span>
-                    <span className="text-sm font-bold text-slate-800">{linha.data_validade || '—'}</span>
-                  </div>
-                </div>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
         )}
       </div>
