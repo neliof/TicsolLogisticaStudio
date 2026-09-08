@@ -401,14 +401,14 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
                 {/* Header */}
                 <div className="flex gap-2 bg-slate-100 border-b border-slate-300 sticky top-0 p-2 font-bold text-slate-700">
                   <div className="w-5 shrink-0">✓</div>
-                  <div className="w-8 shrink-0">NR.</div>
-                  <div className="w-20 shrink-0">CÓDIGO</div>
-                  <div className="flex-1 min-w-32">DESCRIÇÃO</div>
-                  <div className="w-16 shrink-0 text-right">QTD</div>
+                  <div className="w-6 shrink-0">NR.</div>
+                  <div className="w-28 shrink-0">CÓDIGO</div>
+                  <div className="flex-1 min-w-40">DESCRIÇÃO</div>
+                  <div className="w-14 shrink-0 text-right">QTD</div>
                 </div>
                 {/* Rows */}
                 {selectedGuia.linhas.map(l => (
-                  <label key={l.id} className="flex gap-2 items-start cursor-pointer hover:bg-slate-50 p-2 border-b border-slate-100 min-h-10">
+                  <label key={l.id} className="flex gap-2 items-start cursor-pointer hover:bg-slate-50 p-1.5 border-b border-slate-100 min-h-10">
                     <input
                       type="checkbox"
                       checked={selectedLinhasIds.has(l.id)}
@@ -421,12 +421,12 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
                         }
                         setSelectedLinhasIds(newIds);
                       }}
-                      className="w-4 h-4 cursor-pointer shrink-0 mt-1"
+                      className="w-4 h-4 cursor-pointer shrink-0 mt-0.5"
                     />
-                    <div className="w-8 shrink-0 font-mono font-bold text-slate-700 mt-1">{l.nr_linha || '—'}</div>
-                    <div className="w-20 shrink-0 font-mono text-slate-700">{l.artigo_codigo}</div>
-                    <div className="flex-1 min-w-32 text-slate-600 break-words">{l.artigo_descricao}</div>
-                    <div className="w-16 shrink-0 text-right text-purple-600 font-bold mt-1">{l.quantidade_solicitada}</div>
+                    <div className="w-6 shrink-0 font-mono font-bold text-slate-700 text-[11px] mt-0.5">{l.nr_linha || '—'}</div>
+                    <div className="w-28 shrink-0 font-mono text-slate-700 text-[11px] break-words leading-tight">{l.artigo_codigo}</div>
+                    <div className="flex-1 min-w-40 text-slate-600 break-words text-[11px]">{l.artigo_descricao}</div>
+                    <div className="w-14 shrink-0 text-right text-purple-600 font-bold text-[11px] mt-0.5">{l.quantidade_solicitada}</div>
                   </label>
                 ))}
               </div>
@@ -447,25 +447,25 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
             <div className="border border-slate-300 rounded-lg bg-white max-h-64 overflow-y-auto">
               <div className="text-xs font-mono">
                 {/* Header */}
-                <div className="flex gap-2 bg-slate-100 border-b border-slate-300 sticky top-0 p-2 font-bold text-slate-700">
-                  <div className="w-8 shrink-0">NR.</div>
-                  <div className="w-20 shrink-0">CÓDIGO</div>
+                <div className="flex gap-2 bg-slate-100 border-b border-slate-300 sticky top-0 p-2 font-bold text-slate-700 text-[11px]">
+                  <div className="w-6 shrink-0">NR.</div>
+                  <div className="w-28 shrink-0">CÓDIGO</div>
                   <div className="flex-1 min-w-40">DESCRIÇÃO</div>
                   <div className="w-24 shrink-0">EAN</div>
-                  <div className="w-14 shrink-0 text-right">QTD</div>
-                  <div className="w-20 shrink-0">LOTE</div>
+                  <div className="w-12 shrink-0 text-right">QTD</div>
+                  <div className="w-18 shrink-0">LOTE</div>
                   <div className="w-20 shrink-0">VALIDADE</div>
                 </div>
                 {/* Rows */}
                 {linhasSelecionadas.map(linha => (
-                  <div key={linha.id} className="flex gap-2 border-b border-slate-200 p-2 hover:bg-slate-50 items-start min-h-10">
-                    <div className="w-8 shrink-0 mt-1">{linha.nr_linha || '—'}</div>
-                    <div className="w-20 shrink-0 text-purple-600 font-bold">{linha.artigo_codigo}</div>
+                  <div key={linha.id} className="flex gap-2 border-b border-slate-200 p-1.5 hover:bg-slate-50 items-start min-h-10 text-[11px]">
+                    <div className="w-6 shrink-0 mt-0.5">{linha.nr_linha || '—'}</div>
+                    <div className="w-28 shrink-0 text-purple-600 font-bold break-words leading-tight">{linha.artigo_codigo}</div>
                     <div className="flex-1 min-w-40 text-slate-700 break-words">{linha.artigo_descricao}</div>
-                    <div className="w-24 shrink-0 text-slate-600 text-[11px] mt-1">{linha.ean_barcode || '—'}</div>
-                    <div className="w-14 shrink-0 text-right text-purple-700 font-bold mt-1">{linha.quantidade_solicitada}</div>
-                    <div className="w-20 shrink-0 text-slate-700 mt-1">{linha.lote || '—'}</div>
-                    <div className="w-20 shrink-0 text-slate-700 mt-1">{linha.data_validade || '—'}</div>
+                    <div className="w-24 shrink-0 text-slate-600 mt-0.5">{linha.ean_barcode || '—'}</div>
+                    <div className="w-12 shrink-0 text-right text-purple-700 font-bold mt-0.5">{linha.quantidade_solicitada}</div>
+                    <div className="w-18 shrink-0 mt-0.5">{linha.lote || '—'}</div>
+                    <div className="w-20 shrink-0 mt-0.5">{linha.data_validade || '—'}</div>
                   </div>
                 ))}
               </div>
