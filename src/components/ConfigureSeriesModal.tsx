@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { X, RefreshCw, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, RefreshCw, AlertTriangle, CheckCircle2, Trash2 } from 'lucide-react';
 import { api } from '../api';
+import { useSeriesConfig } from '../hooks/useSeriesConfig';
 
 interface ConfigureSeriesModalProps {
   isOpen: boolean;
@@ -8,29 +9,41 @@ interface ConfigureSeriesModalProps {
   onSaved?: () => void;
 }
 
+type SeriesWithType = {
+  code: string;
+  type: 'Entrada' | 'Saida' | 'Venda' | 'Encomenda_Cliente' | 'Encomenda_Fornecedor' | 'Outro';
+  typeName: string;
+};
+
+const typeOrder = ['Entrada', 'Saida', 'Venda', 'Encomenda_Cliente', 'Encomenda_Fornecedor', 'Outro'];
+
 export const ConfigureSeriesModal: React.FC<ConfigureSeriesModalProps> = ({ isOpen, onClose, onSaved }) => {
   const [discovering, setDiscovering] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [availableSeries, setAvailableSeries] = useState<string[]>([]);
-  const [selectedSeries, setSelectedSeries] = useState<string[]>([]);
+  const [deleting, setDeleting] = useState(false);
+  const [availableSeries, setAvailableSeries] = useState<SeriesWithType[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [manualInput, setManualInput] = useState('');
 
-  useEffect(() => {
-    if (isOpen && availableSeries.length === 0) {
-      discoverSeries();
-    }
-  }, [isOpen]);
+  // Module tabs
+  const [activeModule, setActiveModule] = useState<'receção' | 'expedição'>('receção');
+  const receçãoConfig = useSeriesConfig('receção');
+  const expedicãoConfig = useSeriesConfig('expedição');
+
+  const activeConfig = activeModule === 'receção' ? receçãoConfig : expedicãoConfig;
 
   const discoverSeries = async () => {
     try {
       setDiscovering(true);
       setError(null);
+      setInfoMessage(null);
       const response = await api.discover_artsoft_series();
       setAvailableSeries(response.series || []);
       if (response.series.length === 0) {
-        setError('Nenhuma série descoberta. Pode introduzir manualmente abaixo.');
+        setError('Nenhuma série descoberta. Introduz manualmente abaixo.');
+      } else if (response.message) {
+        setInfoMessage(response.message);
       }
     } catch (err) {
       setError(`Erro ao descobrir séries: ${err instanceof Error ? err.message : 'Erro desconhecido'}`);
@@ -40,76 +53,119 @@ export const ConfigureSeriesModal: React.FC<ConfigureSeriesModalProps> = ({ isOp
     }
   };
 
-  const handleToggleSeries = (serie: string) => {
-    setSelectedSeries((prev) =>
-      prev.includes(serie) ? prev.filter((s) => s !== serie) : [...prev, serie]
-    );
+  const groupSeriesByType = (series: SeriesWithType[]) => {
+    const grouped: Record<string, SeriesWithType[]> = {};
+    for (const s of series) {
+      if (!grouped[s.type]) grouped[s.type] = [];
+      grouped[s.type].push(s);
+    }
+    return typeOrder.filter(t => grouped[t]).map(t => ({ type: t, series: grouped[t] }));
   };
 
-  const handleAddManual = () => {
-    const cleaned = manualInput.trim().toUpperCase();
-    if (cleaned && !selectedSeries.includes(cleaned) && !availableSeries.includes(cleaned)) {
-      setAvailableSeries((prev) => [...prev, cleaned].sort());
-      setSelectedSeries((prev) => [...prev, cleaned]);
-      setManualInput('');
+  const handleToggleSerie = (code: string) => {
+    const current = activeConfig.modulo === 'receção' ? activeConfig.receção : activeConfig.expedição;
+    if (current.includes(code)) {
+      if (activeModule === 'receção') {
+        activeConfig.setReceção(current.filter(s => s !== code));
+      } else {
+        activeConfig.setExpedição(current.filter(s => s !== code));
+      }
+    } else {
+      if (activeModule === 'receção') {
+        activeConfig.setReceção([...current, code]);
+      } else {
+        activeConfig.setExpedição([...current, code]);
+      }
     }
   };
 
   const handleSave = async () => {
-    if (selectedSeries.length === 0) {
-      setError('Selecione pelo menos uma série.');
-      return;
-    }
-
     try {
       setSaving(true);
       setError(null);
-      await api.save_artsoft_series({ series: selectedSeries });
-      setSuccess(`Séries gravadas: ${selectedSeries.join(';')}`);
+      await receçãoConfig.save();
+      await expedicãoConfig.save();
+      setSuccess('Configuração guardada com sucesso.');
       setTimeout(() => {
+        setSuccess(null);
         onSaved?.();
-        onClose();
-      }, 1500);
+      }, 2000);
     } catch (err) {
-      setError(`Erro ao gravar séries: ${err instanceof Error ? err.message : 'Erro desconhecido'}`);
+      setError(`Erro ao guardar: ${err instanceof Error ? err.message : 'Erro desconhecido'}`);
     } finally {
       setSaving(false);
     }
   };
 
+  const handleDeleteTestData = async () => {
+    if (!confirm('Isto vai apagar TODOS os documentos, artigos e clientes de teste. Continua?')) {
+      return;
+    }
+    try {
+      setDeleting(true);
+      setError(null);
+      const result = await api.deleteTestData();
+      setSuccess(`Dados de teste apagados: ${result.deleted.documentos} documentos, ${result.deleted.artigos} artigos, ${result.deleted.terceiros} clientes.`);
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      setError(`Erro ao apagar dados: ${err instanceof Error ? err.message : 'Erro desconhecido'}`);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (!isOpen) return null;
 
+  const grouped = groupSeriesByType(availableSeries);
+  const current = activeModule === 'receção' ? activeConfig.receção : activeConfig.expedição;
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 max-h-96 overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-96 overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-slate-200">
-          <h3 className="text-lg font-bold text-slate-900">Configurar séries de guias</h3>
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-slate-100 rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5 text-slate-500" />
+        <div className="flex items-center justify-between p-6 border-b border-slate-200 sticky top-0 bg-white">
+          <h2 className="text-xl font-bold text-slate-900">Configurar Séries de Documentos</h2>
+          <button onClick={onClose} className="text-slate-500 hover:text-slate-700">
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Content */}
-        <div className="p-5 space-y-4">
-          {/* Discover button */}
+        <div className="p-6 space-y-4">
+          {/* Module Selector */}
+          <div className="flex gap-2 border-b border-slate-200 pb-3">
+            <button
+              onClick={() => setActiveModule('receção')}
+              className={`px-3 py-2 rounded text-sm font-medium transition ${
+                activeModule === 'receção'
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              Receção
+            </button>
+            <button
+              onClick={() => setActiveModule('expedição')}
+              className={`px-3 py-2 rounded text-sm font-medium transition ${
+                activeModule === 'expedição'
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              Expedição
+            </button>
+          </div>
+
+          {/* Discovery Button */}
           <button
             onClick={discoverSeries}
             disabled={discovering}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-lg transition-all disabled:opacity-50"
+            className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 disabled:bg-blue-400 flex items-center justify-center gap-2"
           >
-            {discovering ? (
-              <RefreshCw className="w-4 h-4 animate-spin" />
-            ) : (
-              <RefreshCw className="w-4 h-4" />
-            )}
+            <RefreshCw className={`w-4 h-4 ${discovering ? 'animate-spin' : ''}`} />
             {discovering ? 'A descobrir…' : 'Descobrir séries'}
           </button>
 
-          {/* Error message */}
+          {/* Error Message */}
           {error && (
             <div className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-800 px-3 py-2 rounded-lg text-sm">
               <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -117,7 +173,15 @@ export const ConfigureSeriesModal: React.FC<ConfigureSeriesModalProps> = ({ isOp
             </div>
           )}
 
-          {/* Success message */}
+          {/* Info Message */}
+          {infoMessage && (
+            <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2 rounded-lg text-sm">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{infoMessage}</span>
+            </div>
+          )}
+
+          {/* Success Message */}
           {success && (
             <div className="flex items-start gap-2 bg-emerald-50 border border-emerald-200 text-emerald-800 px-3 py-2 rounded-lg text-sm">
               <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
@@ -125,80 +189,68 @@ export const ConfigureSeriesModal: React.FC<ConfigureSeriesModalProps> = ({ isOp
             </div>
           )}
 
-          {/* Available series */}
-          {availableSeries.length > 0 && (
-            <div>
-              <label className="block text-sm font-semibold text-slate-900 mb-2">
-                Séries disponíveis:
-              </label>
-              <div className="space-y-2 max-h-40 overflow-y-auto">
-                {availableSeries.map((serie) => (
-                  <label key={serie} className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedSeries.includes(serie)}
-                      onChange={() => handleToggleSeries(serie)}
-                      className="w-4 h-4 rounded border-slate-300 text-blue-600"
-                    />
-                    <span className="text-sm text-slate-700">{serie}</span>
-                  </label>
+          {/* Available Series by Type */}
+          <div className="space-y-3">
+            <div className="text-sm font-semibold text-slate-700">Séries disponíveis ({activeModule}):</div>
+            {grouped.length > 0 ? (
+              grouped.map(group => (
+                <div key={group.type} className="space-y-1.5">
+                  <div className="text-xs font-bold text-slate-600 px-2 py-1 bg-slate-100 rounded">
+                    {group.series[0].typeName}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 ml-2">
+                    {group.series.map(s => (
+                      <label key={s.code} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={current.includes(s.code)}
+                          onChange={() => handleToggleSerie(s.code)}
+                          className="rounded border-slate-300"
+                        />
+                        <span className="text-sm text-slate-700 font-mono">{s.code}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-slate-500">Nenhuma série disponível. Clica em "Descobrir séries" primeiro.</p>
+            )}
+          </div>
+
+          {/* Selected Series */}
+          {current.length > 0 && (
+            <div className="bg-blue-50 p-3 rounded-lg">
+              <div className="text-xs font-semibold text-blue-900 mb-2">Séries selecionadas para {activeModule}:</div>
+              <div className="flex flex-wrap gap-2">
+                {current.sort().map(code => (
+                  <span key={code} className="bg-blue-200 text-blue-900 text-xs px-2 py-1 rounded font-mono">
+                    {code}
+                  </span>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Manual input */}
-          <div>
-            <label className="block text-sm font-semibold text-slate-900 mb-2">
-              Introduzir manualmente:
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={manualInput}
-                onChange={(e) => setManualInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleAddManual();
-                }}
-                placeholder="ex: V960"
-                className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <button
-                onClick={handleAddManual}
-                disabled={!manualInput.trim()}
-                className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-900 font-semibold text-sm rounded-lg transition-all disabled:opacity-50"
-              >
-                Adicionar
-              </button>
-            </div>
+          {/* Action Buttons */}
+          <div className="flex gap-2 pt-4 border-t border-slate-200">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex-1 bg-green-600 text-white py-2 rounded-lg font-medium hover:bg-green-700 disabled:bg-green-400"
+            >
+              {saving ? 'A guardar…' : 'Guardar Configuração'}
+            </button>
+            <button
+              onClick={handleDeleteTestData}
+              disabled={deleting}
+              className="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 disabled:bg-red-400 flex items-center gap-2"
+              title="Apagar todos os documentos/artigos/clientes de teste"
+            >
+              <Trash2 className="w-4 h-4" />
+              {deleting ? '…' : 'Apagar teste'}
+            </button>
           </div>
-
-          {/* Selected series summary */}
-          {selectedSeries.length > 0 && (
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm font-semibold text-blue-900">
-                Séries selecionadas ({selectedSeries.length}):
-              </p>
-              <p className="text-sm text-blue-800 mt-1 font-mono">{selectedSeries.join(';')}</p>
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex gap-2 p-5 border-t border-slate-200 bg-slate-50">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-900 font-semibold text-sm rounded-lg transition-all"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving || selectedSeries.length === 0}
-            className="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-lg transition-all disabled:opacity-50"
-          >
-            {saving ? 'A gravar…' : 'Gravar'}
-          </button>
         </div>
       </div>
     </div>
