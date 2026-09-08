@@ -123,9 +123,9 @@ export const ExpedicaoModule: React.FC<ExpedicaoModuleProps> = ({
       </div>
 
       {/* Main 3-Column Layout */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-4 max-h-96">
         {/* Column 1: Guias List */}
-        <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+        <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden flex flex-col h-full">
           <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex items-center justify-between">
             <h2 className="font-semibold text-sm text-slate-900 flex items-center gap-2">
               <FileText className="w-4 h-4" />
@@ -189,7 +189,7 @@ export const ExpedicaoModule: React.FC<ExpedicaoModuleProps> = ({
 
         {/* Column 2: Guia Details */}
         {selectedGuia && (
-          <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4 space-y-4">
+          <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4 space-y-4 overflow-y-auto h-full">
             <div>
               <h3 className="font-semibold text-sm text-slate-900 mb-3">Detalhes da Guia</h3>
               <div className="space-y-2 text-sm">
@@ -259,7 +259,7 @@ export const ExpedicaoModule: React.FC<ExpedicaoModuleProps> = ({
 
         {/* Column 3: Paletas + Embarque */}
         {selectedGuia && (
-          <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4 space-y-4 flex flex-col">
+          <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4 space-y-4 flex flex-col h-full overflow-y-auto">
             <div>
               <h3 className="font-semibold text-sm text-slate-900 mb-3 flex items-center gap-2">
                 <Barcode className="w-4 h-4" />
