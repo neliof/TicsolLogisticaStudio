@@ -30,9 +30,50 @@ function snapshotParaStock(r: LinhaReconciliacao): StockPosition {
   };
 }
 
+// Test data: mock receiving orders (temporary until API is available)
+const MOCK_RECEIVING_ORDERS: ReceivingOrder[] = [
+  {
+    id: 'gr-001',
+    numero_guia: 'GR-88421/2026',
+    fornecedor_nome: 'Fornecedor A - Lisboa',
+    data_recebimento: '2026-09-05T10:30:00Z',
+    status: 'PENDENTE',
+    linhas: [
+      {
+        id: 'linha-001-1',
+        nr_linha: 1,
+        artigo_codigo: 'ART-001',
+        artigo_descricao: 'Produto de Teste 1',
+        ean_barcode: '5601234000001',
+        qtd_recebida_caixas: 50,
+        qtd_ja_paletizada_caixas: 0,
+        unidades_por_caixa: 12,
+        peso_bruto_kg: 2.5,
+        altura_cm: 15,
+        lote: 'LOTE-001',
+        data_validade: '2027-12-31'
+      },
+      {
+        id: 'linha-001-2',
+        nr_linha: 2,
+        artigo_codigo: 'ART-002',
+        artigo_descricao: 'Produto de Teste 2',
+        ean_barcode: '5601234000002',
+        qtd_recebida_caixas: 30,
+        qtd_ja_paletizada_caixas: 0,
+        unidades_por_caixa: 24,
+        peso_bruto_kg: 1.8,
+        altura_cm: 12,
+        lote: 'LOTE-002',
+        data_validade: '2027-11-30'
+      }
+    ]
+  }
+];
+
 export function useWMSData() {
-  // Sem fonte real de receções (documento são guias de saída); começa vazio.
-  const [orders, setOrders] = useState<ReceivingOrder[]>([]);
+  // Receiving orders: start with mock data (TODO: replace with API call)
+  const [orders, setOrders] = useState<ReceivingOrder[]>(MOCK_RECEIVING_ORDERS);
   const [pallets, setPallets] = useState<PalletSSCC[]>([]);
   const [stock, setStock] = useState<StockPosition[]>([]);
   const [loading, setLoading] = useState(true);
