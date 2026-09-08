@@ -392,45 +392,43 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
           </div>
         )}
 
-        {/* Packing List: Multi-selection — layout horizontal compacto */}
+        {/* Packing List: Multi-selection — layout flexbox proporcional */}
         {selectedGuia && packingMode && (
           <div>
             <label className="text-slate-700 block mb-2 font-medium text-sm">2. Selecionar Produtos</label>
             <div className="border border-slate-300 rounded-lg bg-white max-h-56 overflow-y-auto">
-              <div className="overflow-x-auto">
-                <div className="text-xs inline-block min-w-full">
-                  {/* Header */}
-                  <div className="flex gap-2 bg-slate-100 border-b border-slate-300 sticky top-0 p-2 font-bold text-slate-700 whitespace-nowrap">
-                    <div className="w-6">✓</div>
-                    <div className="w-8">NR.</div>
-                    <div className="w-20">CÓDIGO</div>
-                    <div className="w-48">DESCRIÇÃO</div>
-                    <div className="w-16 text-right">QTD</div>
-                  </div>
-                  {/* Rows */}
-                  {selectedGuia.linhas.map(l => (
-                    <label key={l.id} className="flex gap-2 items-center cursor-pointer hover:bg-slate-50 p-2 border-b border-slate-100 text-xs whitespace-nowrap">
-                      <input
-                        type="checkbox"
-                        checked={selectedLinhasIds.has(l.id)}
-                        onChange={(e) => {
-                          const newIds = new Set(selectedLinhasIds);
-                          if (e.target.checked) {
-                            newIds.add(l.id);
-                          } else {
-                            newIds.delete(l.id);
-                          }
-                          setSelectedLinhasIds(newIds);
-                        }}
-                        className="w-4 h-4 cursor-pointer shrink-0"
-                      />
-                      <div className="w-8 font-mono font-bold text-slate-700">{l.nr_linha || '—'}</div>
-                      <div className="w-20 font-mono text-slate-700">{l.artigo_codigo}</div>
-                      <div className="w-48 text-slate-600 truncate">{l.artigo_descricao}</div>
-                      <div className="w-16 text-right text-purple-600 font-bold">{l.quantidade_solicitada} un</div>
-                    </label>
-                  ))}
+              <div className="text-xs">
+                {/* Header */}
+                <div className="flex gap-2 bg-slate-100 border-b border-slate-300 sticky top-0 p-2 font-bold text-slate-700">
+                  <div className="w-5 shrink-0">✓</div>
+                  <div className="w-8 shrink-0">NR.</div>
+                  <div className="w-20 shrink-0">CÓDIGO</div>
+                  <div className="flex-1 min-w-32">DESCRIÇÃO</div>
+                  <div className="w-16 shrink-0 text-right">QTD</div>
                 </div>
+                {/* Rows */}
+                {selectedGuia.linhas.map(l => (
+                  <label key={l.id} className="flex gap-2 items-center cursor-pointer hover:bg-slate-50 p-2 border-b border-slate-100">
+                    <input
+                      type="checkbox"
+                      checked={selectedLinhasIds.has(l.id)}
+                      onChange={(e) => {
+                        const newIds = new Set(selectedLinhasIds);
+                        if (e.target.checked) {
+                          newIds.add(l.id);
+                        } else {
+                          newIds.delete(l.id);
+                        }
+                        setSelectedLinhasIds(newIds);
+                      }}
+                      className="w-4 h-4 cursor-pointer shrink-0"
+                    />
+                    <div className="w-8 shrink-0 font-mono font-bold text-slate-700">{l.nr_linha || '—'}</div>
+                    <div className="w-20 shrink-0 font-mono text-slate-700">{l.artigo_codigo}</div>
+                    <div className="flex-1 min-w-32 truncate text-slate-600">{l.artigo_descricao}</div>
+                    <div className="w-16 shrink-0 text-right text-purple-600 font-bold">{l.quantidade_solicitada}</div>
+                  </label>
+                ))}
               </div>
             </div>
             <div className="mt-1 text-xs text-slate-600">
@@ -442,36 +440,34 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
           </div>
         )}
 
-        {/* Produtos Selecionados — tabela com scroll horizontal */}
+        {/* Produtos Selecionados — tabela flexbox proporcional */}
         {linhasSelecionadas.length > 0 && (
           <div>
             <label className="text-slate-700 block mb-2 font-medium text-sm">3. Produtos Selecionados</label>
             <div className="border border-slate-300 rounded-lg bg-white max-h-64 overflow-y-auto">
-              <div className="overflow-x-auto">
-                <div className="text-xs inline-block min-w-full font-mono">
-                  {/* Header */}
-                  <div className="flex gap-2 bg-slate-100 border-b border-slate-300 sticky top-0 p-2 font-bold text-slate-700 whitespace-nowrap">
-                    <div className="w-8">NR.</div>
-                    <div className="w-20">CÓDIGO</div>
-                    <div className="w-48">DESCRIÇÃO</div>
-                    <div className="w-24">EAN</div>
-                    <div className="w-14 text-right">QTD</div>
-                    <div className="w-16">LOTE</div>
-                    <div className="w-20">VALIDADE</div>
-                  </div>
-                  {/* Rows */}
-                  {linhasSelecionadas.map(linha => (
-                    <div key={linha.id} className="flex gap-2 border-b border-slate-200 p-2 hover:bg-slate-50 items-center whitespace-nowrap">
-                      <div className="w-8">{linha.nr_linha || '—'}</div>
-                      <div className="w-20 text-purple-600 font-bold">{linha.artigo_codigo}</div>
-                      <div className="w-48 truncate text-slate-700">{linha.artigo_descricao}</div>
-                      <div className="w-24 text-slate-600 text-[11px]">{linha.ean_barcode || '—'}</div>
-                      <div className="w-14 text-right text-purple-700 font-bold">{linha.quantidade_solicitada}</div>
-                      <div className="w-16 text-slate-700">{linha.lote || '—'}</div>
-                      <div className="w-20 text-slate-700">{linha.data_validade || '—'}</div>
-                    </div>
-                  ))}
+              <div className="text-xs font-mono">
+                {/* Header */}
+                <div className="flex gap-2 bg-slate-100 border-b border-slate-300 sticky top-0 p-2 font-bold text-slate-700">
+                  <div className="w-8 shrink-0">NR.</div>
+                  <div className="w-20 shrink-0">CÓDIGO</div>
+                  <div className="flex-1 min-w-40">DESCRIÇÃO</div>
+                  <div className="w-24 shrink-0">EAN</div>
+                  <div className="w-14 shrink-0 text-right">QTD</div>
+                  <div className="w-20 shrink-0">LOTE</div>
+                  <div className="w-20 shrink-0">VALIDADE</div>
                 </div>
+                {/* Rows */}
+                {linhasSelecionadas.map(linha => (
+                  <div key={linha.id} className="flex gap-2 border-b border-slate-200 p-2 hover:bg-slate-50 items-center">
+                    <div className="w-8 shrink-0">{linha.nr_linha || '—'}</div>
+                    <div className="w-20 shrink-0 text-purple-600 font-bold">{linha.artigo_codigo}</div>
+                    <div className="flex-1 min-w-40 truncate text-slate-700">{linha.artigo_descricao}</div>
+                    <div className="w-24 shrink-0 text-slate-600 text-[11px]">{linha.ean_barcode || '—'}</div>
+                    <div className="w-14 shrink-0 text-right text-purple-700 font-bold">{linha.quantidade_solicitada}</div>
+                    <div className="w-20 shrink-0 text-slate-700">{linha.lote || '—'}</div>
+                    <div className="w-20 shrink-0 text-slate-700">{linha.data_validade || '—'}</div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
