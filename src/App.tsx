@@ -17,6 +17,7 @@ import { AuditoriaModule } from './components/AuditoriaModule';
 import { ExpedicaoModule } from './components/ExpedicaoModule';
 import { ExpedicaoPaletizacaoModule } from './components/ExpedicaoPaletizacaoModule';
 import { BarcodeScannerModal } from './components/BarcodeScannerModal';
+import SeriesConfig from './components/SeriesConfig';
 import { useWMSData } from './hooks/useWMSData';
 import { useExpedicaoData } from './hooks/useExpedicaoData';
 import { GuiaTransporte, PaletaExpedicao, ChecklistExpedicao, ComprovanteEmbarque } from './types/expedicao';
@@ -400,7 +401,10 @@ function AppAutenticada({
         {/* Tab 5: Sync ARTSOFT */}
         {activeTab === 'artsoft_sync' && <ArtsoftSyncModule />}
 
-        {/* Tab 5: Motor de Regras */}
+        {/* Tab 6: Configuração de Séries */}
+        {activeTab === 'series_config' && <SeriesConfig />}
+
+        {/* Tab 7: Motor de Regras */}
         {activeTab === 'regras' && (
           <RegrasEngineModule
             rules={rules}
@@ -410,7 +414,7 @@ function AppAutenticada({
           />
         )}
 
-        {/* Tab 6: Auditoria */}
+        {/* Tab 8: Auditoria */}
         {activeTab === 'auditoria' && (
           <AuditoriaModule logs={auditLogs} />
         )}

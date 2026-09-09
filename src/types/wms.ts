@@ -5,6 +5,7 @@ export type AppTab =
   | 'stock_mapa'
   | 'expedicao'
   | 'artsoft_sync'
+  | 'series_config'
   | 'regras'
   | 'auditoria';
 

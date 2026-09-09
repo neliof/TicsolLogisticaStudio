@@ -251,4 +251,16 @@ export const api = {
       }
     );
   },
+
+  descobrirSeries() {
+    return this.discover_artsoft_series();
+  },
+
+  obterSeriesConfig(modulo: string) {
+    return this.getSeriesConfig(modulo);
+  },
+
+  salvarSeriesConfig(modulo: string, receção: string[], expedição: string[]) {
+    return this.saveSeriesConfig(modulo, receção, expedição);
+  },
 };
