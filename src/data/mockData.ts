@@ -425,8 +425,8 @@ export const INITIAL_AUDIT_LOGS: AuditLog[] = [
     acao: 'SYNC_SNAPSHOT_ARTSOFT',
     tabela_afetada: 'logistics.artsoft_stock_snapshot',
     postgrest_rpc: 'fn_artsoft_sync_staging()',
-    detalhes_json: '{"connector": "REST_192.168.1.28:4218", "artigos_processados": 142, "divergencias_detetadas": 2}',
-    ip_terminal: '192.168.1.28 (Connector ARTSOFT)'
+    detalhes_json: '{"connector": "REST_192.168.1.250:4218", "artigos_processados": 142, "divergencias_detetadas": 2}',
+    ip_terminal: '192.168.1.250 (Connector ARTSOFT)'
   }
 ];
 

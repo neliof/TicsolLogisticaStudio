@@ -86,7 +86,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* ARTSOFT Endpoint Connection */}
             <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-800/80 border border-slate-700/80 rounded text-slate-300 font-mono">
               <Radio className="w-3.5 h-3.5 text-amber-400" />
-              <span>ARTSOFT: <code className="text-amber-300">192.168.1.28</code></span>
+              <span>ARTSOFT: <code className="text-amber-300">192.168.1.250</code></span>
             </div>
           </div>
 
