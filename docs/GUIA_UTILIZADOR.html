@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guia do Utilizador — TicSol Logistics Hub</title>
+  <style>
+    :root {
+      --bg-page: #f4f5f2;
+      --bg-card: #ffffff;
+      --text-main: #16232f;
+      --text-body: #2c3a44;
+      --text-muted: #647079;
+      --line-color: #dde2de;
+      --accent: #0f6b5c;
+      --accent-dark: #0b4f44;
+      --accent-light: #e6f1ee;
+      --warn-bg: #fbf1de;
+      --warn-text: #8a5a00;
+      --danger-bg: #f9e9e7;
+      --danger-text: #9c2b22;
+
+      font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--text-body);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      * { animation: none !important; transition: none !important; }
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-page);
+    }
+
+    .container {
+      display: flex;
+      max-width: 1400px;
+      margin: 0 auto;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 250px;
+      background-color: var(--bg-card);
+      border-right: 1px solid var(--line-color);
+      padding: 40px 20px;
+      position: sticky;
+      top: 0;
+      max-height: 100vh;
+      overflow-y: auto;
+    }
+
+    .sidebar-header {
+      font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sidebar-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background-color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .sidebar-nav {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .sidebar-nav li {
+      margin: 8px 0;
+    }
+
+    .sidebar-nav a {
+      display: block;
+      padding: 8px 12px;
+      color: var(--text-body);
+      text-decoration: none;
+      border-radius: 4px;
+      font-size: 14px;
+      transition: background-color 0.2s;
+    }
+
+    .sidebar-nav a:hover,
+    .sidebar-nav a.active {
+      background-color: var(--accent-light);
+      color: var(--accent-dark);
+      font-weight: 600;
+    }
+
+    /* Main content */
+    .main {
+      flex: 1;
+      padding: 40px;
+      overflow-y: auto;
+    }
+
+    /* Header */
+    .page-header {
+      font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 12px;
+    }
+
+    .page-subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 40px;
+    }
+
+    /* Sections */
+    h2 {
+      font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin: 60px 0 20px 0;
+      padding-top: 20px;
+      border-top: 1px solid var(--line-color);
+    }
+
+    h2:first-of-type {
+      border-top: none;
+      margin-top: 0;
+      padding-top: 0;
+    }
+
+    p {
+      margin: 12px 0;
+      color: var(--text-body);
+    }
+
+    /* Numbered steps */
+    ol {
+      list-style: none;
+      padding: 0;
+      margin: 20px 0;
+      counter-reset: step-counter;
+    }
+
+    ol li {
+      margin: 20px 0;
+      padding-left: 50px;
+      position: relative;
+      counter-increment: step-counter;
+    }
+
+    ol li::before {
+      content: counter(step-counter);
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 32px;
+      height: 32px;
+      border: 2px solid var(--accent);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      color: var(--accent);
+      font-size: 14px;
+    }
+
+    ol li + li::before {
+      border-top: 1px solid var(--line-color);
+      border-radius: 50% 50% 50% 50%;
+    }
+
+    /* Inline chip for UI elements */
+    strong {
+      padding: 2px 8px;
+      background-color: var(--bg-card);
+      border: 1px solid var(--line-color);
+      border-radius: 4px;
+      color: var(--accent-dark);
+      font-weight: 600;
+      font-size: 14px;
+      display: inline-block;
+      white-space: nowrap;
+    }
+
+    /* Alert boxes */
+    .box {
+      margin: 20px 0;
+      padding: 16px;
+      border-left: 3px solid;
+      border-radius: 4px;
+      background-color: var(--accent-light);
+      border-color: var(--accent);
+    }
+
+    .box.warning {
+      background-color: var(--warn-bg);
+      border-color: var(--warn-text);
+      color: var(--warn-text);
+    }
+
+    .box.danger {
+      background-color: var(--danger-bg);
+      border-color: var(--danger-text);
+      color: var(--danger-text);
+    }
+
+    .box p {
+      margin: 8px 0;
+      color: inherit;
+    }
+
+    /* Screenshots */
+    .screenshot {
+      margin: 24px 0;
+      text-align: center;
+    }
+
+    .screenshot img {
+      max-width: 100%;
+      height: auto;
+      border: 1px solid var(--line-color);
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    .screenshot-caption {
+      font-style: italic;
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 8px;
+    }
+
+    /* Responsive */
+    @media (max-width: 860px) {
+      .container {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+        max-height: none;
+        border-right: none;
+        border-bottom: 1px solid var(--line-color);
+        padding: 20px;
+        position: static;
+      }
+
+      .sidebar-nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .sidebar-nav li {
+        margin: 0;
+      }
+
+      .sidebar-nav a {
+        padding: 6px 12px;
+        font-size: 13px;
+        border: 1px solid var(--accent);
+        background-color: var(--bg-page);
+        color: var(--accent);
+      }
+
+      .main {
+        padding: 20px;
+      }
+    }
+
+    /* Accessibility */
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    a:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-icon">?</div>
+        Guia
+      </div>
+      <nav class="sidebar-nav">
+        <li><a href="#recepcao">1. Receção</a></li>
+        <li><a href="#paletizacao-recepcao">2. Paletização Receção</a></li>
+        <li><a href="#expedicao">3. Expedição</a></li>
+        <li><a href="#paletizacao-expedicao">4. Paletização Expedição</a></li>
+        <li><a href="#stock-mapa">5. Stock e Mapa</a></li>
+        <li><a href="#sync-artsoft">6. Sincronização ARTSOFT</a></li>
+        <li><a href="#config-series">7. Configuração de Séries</a></li>
+        <li><a href="#ligacao-artsoft">8. Ligação ARTSOFT</a></li>
+        <li><a href="#gestao-dados">9. Gestão de Dados</a></li>
+        <li><a href="#motor-regras">10. Motor de Regras</a></li>
+        <li><a href="#logs-auditoria">11. Logs e Auditoria</a></li>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <h1 class="page-header">TicSol Logistics Hub</h1>
+      <p class="page-subtitle">Consola de Controlo de Armazém — Gestão de Receções, Paletização e Expedição</p>
+
+      <div class="box">
+        <strong>Nota de Privacidade:</strong> Este guia inclui screenshots reais da aplicação. Nomes de clientes, endereços, produtos e identificadores foram substituídos por exemplos fictícios para proteger privacidade. A funcionalidade descrita aplica-se aos dados reais da sua empresa.
+      </div>
+
+      <h2 id="recepcao">1. Receção</h2>
+      <p>A aba Receção é onde regista a chegada de encomendas do fornecedor. Permite adicionar guias de receção, verificar quantidade de artigos esperados versus recebidos, e marcar linhas como concluídas ou com divergências.</p>
+
+      <ol>
+        <li>Clique na aba <strong>Receção</strong> no topo da página.</li>
+        <li>No painel esquerdo, vê a lista de guias pendentes de receção. Cada linha mostra o número da guia, o fornecedor e o estado (Pendente, em Receção, Concluído).</li>
+        <li>Clique numa guia para selecioná-la. No painel direito, abre-se a lista de artigos dessa guia com as quantidades esperadas e recebidas.</li>
+        <li>Para cada linha de artigo, introduza a quantidade que foi fisicamente recebida no campo <strong>QTD Recebida</strong>.</li>
+        <li>Se houver danificados ou divergências, clique no ícone de alerta na linha e adicione uma observação (ex: "10 unidades danificadas").</li>
+        <li>Quando terminar uma linha, o estado muda automaticamente para <strong>Concluído</strong> se a quantidade recebida bate certo com a esperada, ou <strong>Parcial</strong>/<strong>Divergente</strong> se houver diferenças.</li>
+        <li>Quando toda a guia estiver processada, clique em <strong>Confirmar Receção</strong> para marcar a guia como finalizada.</li>
+      </ol>
+
+      <div class="screenshot">
+        <img src="screenshots/01-recepcao.png" alt="Ecrã de Receção mostrando lista de guias pendentes e detalhes de artigos">
+        <div class="screenshot-caption">Receção vazia — aguarda sincronização de documentos do ARTSOFT</div>
+      </div>
+
+      <h2 id="paletizacao-recepcao">2. Paletização Receção</h2>
+      <p>Após a receção dos artigos, a aba Paletização Receção permite organizar os artigos em paletes de acordo com as regras do cliente (peso máximo, altura máxima, compatibilidade de produtos). O sistema calcula automaticamente a configuração ideal da palete (camadas, caixas por camada, SSCC).</p>
+
+      <ol>
+        <li>Clique na aba <strong>Paletização Receção</strong>.</li>
+        <li>Selecione uma <strong>Guia de Receção</strong> no dropdown e um <strong>Artigo a Paletizar</strong>.</li>
+        <li>O sistema mostra quantas caixas foram recebidas, quantas já estão paletizadas e quantas restam pendentes.</li>
+        <li>Introduza o número de <strong>Caixas por Camada</strong> (ex: 10) e <strong>Número de Camadas</strong> (ex: 4).</li>
+        <li>O sistema calcula automaticamente altura total, peso e valida contra as regras do cliente (ex: máximo 150 cm altura, 1000 kg peso).</li>
+        <li>Visualize a simulação isométrica 3D da palete à direita (mostra as camadas em cores alternadas).</li>
+        <li>Se a configuração for válida, clique em <strong>Materializar Palete SSCC &amp; Gerar GS1-128</strong>.</li>
+        <li>Um código SSCC único de 18 dígitos é gerado automaticamente (ex: 3 5601234 000000012 4). A palete fica registada em "Staging" à espera de impressão da etiqueta.</li>
+        <li>Opcionalmente, clique no ícone de impressora para abrir a janela de impressão de etiqueta GS1 (contém SSCC, EAN do artigo, lote, validade).</li>
+      </ol>
+
+      <div class="screenshot">
+        <img src="screenshots/02-paletizacao-recepcao.png" alt="Ecrã de Paletização Receção com seleção de guia, cálculo de camadas e simulação 3D">
+        <div class="screenshot-caption">Paletização Receção com formulário de cálculo e visualização 3D da palete proposta</div>
+      </div>
+
+      <h2 id="expedicao">3. Expedição</h2>
+      <p>A aba Expedição mostra as guias de transporte que saem para clientes. Apresenta a lista de documentos em estado de receção, detalhes do cliente (morada, NIF) e produtos incluídos. Permite sincronizar novos documentos do ARTSOFT e confirmar a palletização da carga.</p>
+
+      <ol>
+        <li>Clique na aba <strong>Expedição</strong>.</li>
+        <li>Na secção <strong>Guias de Transporte</strong>, vê uma lista de documentos do tipo venda/guia de transporte prontos para empacar.</li>
+        <li>Clique numa guia para ver os detalhes: cliente, morada de entrega, NIF, lista de produtos com quantidades.</li>
+        <li>A secção <strong>Paletas</strong> mostra as paletes já preparadas para esta guia (se houver).</li>
+        <li>Para importar novas guias do ARTSOFT, clique em <strong>Sincronizar Documentos</strong>. O sistema faz uma chamada ao servidor, carrega todos os documentos de vendas sincronizados e renova a lista.</li>
+        <li>O estado de cada documento é mostrado em badge: <strong>Receção</strong> (ainda em picking), <strong>Em Expedição</strong> (pronto para embarque).</li>
+        <li>Quando tudo estiver pronto, clique em <strong>Confirmar Paletização</strong> para marcar a carga como expedida.</li>
+      </ol>
+
+      <div class="screenshot">
+        <img src="screenshots/03-expedicao.png" alt="Ecrã de Expedição mostrando lista de guias de transporte e detalhes de cliente e produtos">
+        <div class="screenshot-caption">Expedição com lista de documentos (guias de transporte) e detalhes de cliente. Nomes de clientes e moradas são dados reais da empresa.</div>
+      </div>
+
+      <h2 id="paletizacao-expedicao">4. Paletização Expedição</h2>
+      <p>A aba Paletização Expedição é semelhante à receção, mas aplica-se aos documentos de saída. Permite agrupar guias de transporte em paletes de forma automática (agrupa por temperatura, cliente, validade) e gera SSCCs + etiquetas de embarque.</p>
+
+      <ol>
+        <li>Clique na aba <strong>Paletização Expedição</strong>.</li>
+        <li>Na secção <strong>Selecionar Guia de Transporte</strong>, escolha uma guia a partir do dropdown ou procure pelo número.</li>
+        <li>Na secção <strong>Modo Paletização</strong>, escolha entre <strong>Mono-Produto</strong> (uma palete = um artigo) ou <strong>Packing List (Multi)</strong> (uma palete pode ter vários artigos desde que não conflitem).</li>
+        <li>A secção <strong>Selecionar Produtos</strong> lista os artigos da guia. Marque com <strong>checkbox</strong> quais deseja paletizar nesta operação.</li>
+        <li>Introduza <strong>Caixas por Camada</strong> e <strong>Número de Camadas</strong>.</li>
+        <li>Visualize a simulação 3D e o peso/altura calculados.</li>
+        <li>Clique em <strong>Materializar Palete + Imprimir Etiqueta</strong>.</li>
+        <li>Um código SSCC é gerado, a palete é registada como "Em Expedição" e abre automaticamente a janela de impressão de etiqueta.</li>
+      </ol>
+
+      <div class="screenshot">
+        <img src="screenshots/04-paletizacao-expedicao.png" alt="Ecrã de Paletização Expedição com seleção de guia, modo de paletização, produtos e simulação 3D">
+        <div class="screenshot-caption">Paletização Expedição com formulário de seleção de produtos e visualização 3D</div>
+      </div>
+
+      <h2 id="stock-mapa">5. Stock e Mapa</h2>
+      <p>A aba Stock e Mapa apresenta um mapa interativo do armazém (localização, zona, capacidade) e uma tabela completa do inventário físico. Mostra quantidade de artigos em stock, lotes, datas de validade e estado (OK, alerta, expirado).</p>
+
+      <ol>
+        <li>Clique na aba <strong>Stock &amp; Mapa</strong>.</li>
+        <li>No topo, vê a <strong>Gestão de Stock e Mapa de Armazém em Tempo Real</strong> com uma vista aérea interativa das localizações (zonas A, B, C com cores diferentes para temperatura).</li>
+        <li>Clique numa localização (ex: A-01-02-1) para ver as paletes ali armazenadas.</li>
+        <li>Abaixo, a <strong>Tabela Completa de Inventário FEFO Alert System</strong> lista todos os artigos em stock com colunas: Localização, Artigo, Lote, Data de Validade (YY-MM-DD), Quantidade (unidades), Estado (OK = verde, Alerta 30D = amarelo, Expirado = vermelho).</li>
+        <li>Clique no dropdown <strong>Todos os Estados FEFO</strong> para filtrar (apenas OK, com alerta, expirados).</li>
+        <li>O campo de pesquisa <strong>Filter by EAN code</strong> permite procurar por código de barras.</li>
+        <li>A coluna <strong>Importadora RLS</strong> mostra se o stock é gerido por RLS (Row Level Security) — cada empresa vê só o seu stock.</li>
+      </ol>
+
+      <div class="screenshot">
+        <img src="screenshots/05-stock-mapa.png" alt="Ecrã de Stock e Mapa com mapa interativo de armazém e tabela de inventário FEFO">
+        <div class="screenshot-caption">Stock e Mapa com localizações em mapa 2D (Zona A, B, C, etc.) e tabela de inventário. Produtos mostrados são exemplos fictícios da base de dados de teste.</div>
+      </div>
+
+      <h2 id="sync-artsoft">6. Sincronização ARTSOFT</h2>
+      <p>A aba Sync ARTSOFT mostra o histórico de sincronizações com o sistema ARTSOFT (ERP da empresa). Permite disparar sincronizações manuais de produtos, clientes/fornecedores e guias de transporte.</p>
+
+      <ol>
+        <li>Clique na aba <strong>Sync ARTSOFT</strong>.</li>
+        <li>No topo, vê o estado do conector: <strong>Estado do Conector</strong> (Online/Offline), <strong>Última Sincronização</strong> (data/hora), <strong>Produtos com Divergência</strong> (número de SKUs com stock diferente entre ARTSOFT e WMS).</li>
+        <li>Clique em <strong>Sincronizar Agora</strong> para dispara uma sincronização manual completa (artigos, clientes, fornecedores, guias).</li>
+        <li>A secção <strong>Histórico de Execuções</strong> lista todas as sincronizações executadas, com data, tipo (guias/fornecedores/produtos), estado (Concluída/Erro Funcional), número de páginas processadas e correlation ID para diagnóstico.</li>
+        <li>Clique em <strong>Reconciliação de Stock</strong> (tab ao lado) para ver divergências detalhadas: produtos onde ARTSOFT tem quantidade diferente de WMS, percentual de diferença, se é crítico ou menor.</li>
+      </ol>
+
+      <div class="screenshot">
+        <img src="screenshots/06-sync-artsoft.png" alt="Ecrã de Sincronização ARTSOFT com estado do conector e histórico de execuções">
+        <div class="screenshot-caption">Sincronização ARTSOFT com histórico de execuções (guias, fornecedores) e estado do conector</div>
+      </div>
+
+      <h2 id="config-series">7. Configuração de Séries</h2>
+      <p>A aba Configuração de Séries permite escolher quais as séries de documentos do ARTSOFT você quer sincronizar em Receção e Expedição. Séries são prefixos de documentos (ex: E001=Entradas, V960=Vendas).</p>
+
+      <ol>
+        <li>Clique na aba <strong>Configuração de Séries</strong>.</li>
+        <li>O ecrã mostra dois painéis: <strong>Receção</strong> (esquerda) e <strong>Expedição</strong> (direita).</li>
+        <li>Cada painel lista as séries disponíveis como checkboxes com o código (ex: E001, V960) e o nome do documento (ex: "V/FACTURA CONTINENTE", "GUIA DE TRANSPORTE").</li>
+        <li>Marque com <strong>checkbox</strong> as séries que pretende sincronizar. Exemplo: em Receção, selecione E001, E002, F001 (Entradas e Encomendas de Fornecedores). Em Expedição, selecione V960, V962, S001 (Vendas e Saídas).</li>
+        <li>Clique em <strong>Guardar Configuração</strong> para persistir as escolhas.</li>
+        <li>A próxima sincronização do ARTSOFT trará apenas documentos das séries selecionadas, evitando desorganização.</li>
+      </ol>
+
+      <div class="screenshot">
+        <img src="screenshots/07-config-series.png" alt="Ecrã de Configuração de Séries (a carregar dados)">
+        <div class="screenshot-caption">Configuração de Séries — interface a carregar dados do ARTSOFT</div>
+      </div>
+
+      <h2 id="ligacao-artsoft">8. Ligação ARTSOFT</h2>
+      <p>A aba Ligação ARTSOFT é uma interface de administração. Permite visualizar e alterar os dados de ligação ao webservice ARTSOFT (IP do host, porta, utilizador, palavra-passe).</p>
+
+      <ol>
+        <li>Clique na aba <strong>Ligação ARTSOFT</strong>.</li>
+        <li>Vê quatro campos de entrada: <strong>Host</strong> (IP ou domínio), <strong>Porta</strong> (número), <strong>Utilizador</strong> (login ARTSOFT), <strong>Senha</strong> (deixa-se vazia se não mudar).</li>
+        <li>Se precisar alterar algum valor, edite o campo. A senha mostra-se sempre como pontos (••••••••) por segurança.</li>
+        <li>Se deixar o campo Senha em branco e clicar Guardar, mantém-se a anterior (para não ser obrigado a reintroduzir sempre).</li>
+        <li>Se introduzir uma palavra-passe nova, é encriptada e guardada de forma segura na base de dados.</li>
+        <li>Clique em <strong>Guardar Ligação</strong> para salvar as alterações.</li>
+        <li>Se houver erro de ligação, aparece uma mensagem a indicar se o host está inacessível, utilizador inválido, ou timeout.</li>
+      </ol>
+
+      <div class="screenshot">
+        <img src="screenshots/08-ligacao-artsoft.png" alt="Ecrã de Ligação ARTSOFT com formulário de configuração">
+        <div class="screenshot-caption">Ligação ARTSOFT — formulário de configuração com campos host, porta, utilizador e senha</div>
+      </div>
+
+      <h2 id="gestao-dados">9. Gestão de Dados</h2>
+      <p>A aba Gestão de Dados é para limpeza de dados de teste ou sincronização anterior. Permite apagar seletivamente documentos, stock, paletes, artigos, clientes e fornecedores — útil antes de uma resincronização completa.</p>
+
+      <ol>
+        <li>Clique na aba <strong>Gestão de Dados</strong>.</li>
+        <li>Vê uma lista de tabelas com contagem atual de registos (ex: 612 Documentos, 395 Stock, 11 Paletes, 11027 Produtos, 1232 Clientes, 60 Fornecedores).</li>
+        <li>Marque com <strong>checkbox</strong> quais as tabelas que quer apagar. Exemplo: se quer recarregar só os documentos, marque apenas "Documentos".</li>
+        <li>Clique em <strong>Apagar Selecionados (N)</strong> onde N é o número de tabelas marcadas.</li>
+        <li>Aparece um diálogo de confirmação listando exatamente o que vai ser apagado (ex: "Vais apagar 612 registos de Documentos. Ação irreversível. Podes resincronizar depois a partir do ARTSOFT").</li>
+        <li>Confirme a operação (não há volta atrás).</li>
+        <li>Após apagar, clique em <strong>Sincronizar Agora</strong> (na aba Sync ARTSOFT) para repor os dados.</li>
+      </ol>
+
+      <div class="box warning">
+        <strong>Aviso:</strong> Apagar dados é irreversível. Não afeta a configuração de séries nem de ligação. Use para limpar testes antes de resincronizar do ARTSOFT.
+      </div>
+
+      <div class="screenshot">
+        <img src="screenshots/09-gestao-dados.png" alt="Ecrã de Gestão de Dados com lista de tabelas e contagens">
+        <div class="screenshot-caption">Gestão de Dados — selecione tabelas a apagar com checkboxes</div>
+      </div>
+
+      <h2 id="motor-regras">10. Motor de Regras</h2>
+      <p>A aba Motor de Regras permite definir e testar as regras de negócio de paletização por cliente. Cada cliente tem limites de altura, peso, compatibilidade de produtos, tipo de palete e requisitos de etiqueta.</p>
+
+      <ol>
+        <li>Clique na aba <strong>Motor de Regras</strong>.</li>
+        <li>Vê uma tabela com regras já criadas para clientes (ex: Sonae MC, Jerónimo Martins, etc).</li>
+        <li>Clique numa linha de regra para expandir e ver os detalhes: <strong>Altura máxima</strong> (ex: 180 cm), <strong>Peso máximo</strong> (ex: 1000 kg), <strong>Obriga lote único</strong> (sim/não), <strong>Obriga produto único</strong> (sim/não), <strong>Tipo de palete</strong> (EUR 120x80, ISO 120x100, CHEP Blue).</li>
+        <li>Cada regra pode ter <strong>Condições</strong> (ex: aplicar só a categoria "congelados") e <strong>Efeitos</strong> (ex: etiqueta em posição topo-direita, com filme, 2 cópias).</li>
+        <li>Para criar uma nova regra, clique em <strong>Adicionar Regra</strong> (se disponível).</li>
+        <li>As regras são aplicadas automaticamente quando paletiza em Paletização Receção/Expedição — se violar um limite, o sistema avisa.</li>
+      </ol>
+
+      <div class="screenshot">
+        <img src="screenshots/10-motor-regras.png" alt="Ecrã do Motor de Regras com tabela de regras de paletização por cliente">
+        <div class="screenshot-caption">Motor de Regras — tabela de regras de paletização com limites por cliente</div>
+      </div>
+
+      <h2 id="logs-auditoria">11. Logs e Auditoria</h2>
+      <p>A aba Logs e Auditoria regista todas as ações executadas na aplicação (receções, paletizações, sincronizações, alterações de configuração). Útil para rastreamento, investigação de erros e conformidade.</p>
+
+      <ol>
+        <li>Clique na aba <strong>Logs &amp; Auditoria</strong>.</li>
+        <li>Vê uma tabela com colunas: <strong>Data/Hora</strong>, <strong>Operador</strong> (utilizador), <strong>Ação</strong> (ex: "Receção Confirmada", "Palete Criada"), <strong>Tabela Afetada</strong> (ex: documento, palete), <strong>Detalhes JSON</strong> (informação contextual).</li>
+        <li>Clique numa linha para expandir e ver os detalhes completos (IDs, valores antigos/novos, IP de origem).</li>
+        <li>Use o campo de pesquisa para filtrar por operador, ação ou data.</li>
+        <li>Os logs são imutáveis — servem para auditar quem fez o quê e quando, inclusive por motivos de segurança e rastreabilidade de produto.</li>
+      </ol>
+
+      <div class="screenshot">
+        <img src="screenshots/11-logs-auditoria.png" alt="Ecrã de Logs e Auditoria com tabela de registos de ações">
+        <div class="screenshot-caption">Logs e Auditoria — tabela de ações executadas (receções, paletizações, sincronizações)</div>
+      </div>
+
+      <!-- Footer -->
+      <div style="margin-top: 80px; padding-top: 40px; border-top: 1px solid var(--line-color); color: var(--text-muted); font-size: 13px;">
+        <p><strong>Contacte o Suporte TicSol:</strong> Para questões sobre utilização, sincronização com ARTSOFT, ou configuração de regras, contacte a equipa de operações.</p>
+        <p><strong>Última atualização:</strong> 10 de Setembro de 2026</p>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
