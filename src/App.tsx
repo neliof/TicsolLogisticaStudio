@@ -19,6 +19,7 @@ import { ExpedicaoPaletizacaoModule } from './components/ExpedicaoPaletizacaoMod
 import { BarcodeScannerModal } from './components/BarcodeScannerModal';
 import SeriesConfig from './components/SeriesConfig';
 import ArtsoftConfig from './components/ArtsoftConfig';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { useWMSData } from './hooks/useWMSData';
 import { useExpedicaoData } from './hooks/useExpedicaoData';
 import { GuiaTransporte, PaletaExpedicao, ChecklistExpedicao, ComprovanteEmbarque } from './types/expedicao';
@@ -356,14 +357,16 @@ function AppAutenticada({
 
         {/* Tab 2: Paletização Receção */}
         {activeTab === 'paletizacao' && (
-          <PaletizacaoModule
-            orders={orders}
-            pallets={pallets}
-            ruleConfigs={rules}
-            selectedTenant={selectedTenant}
-            onPalletCreated={handlePalletCreated}
-            preSelectedOrderAndLine={preSelectedOrderAndLine}
-          />
+          <ErrorBoundary>
+            <PaletizacaoModule
+              orders={orders}
+              pallets={pallets}
+              ruleConfigs={rules}
+              selectedTenant={selectedTenant}
+              onPalletCreated={handlePalletCreated}
+              preSelectedOrderAndLine={preSelectedOrderAndLine}
+            />
+          </ErrorBoundary>
         )}
 
         {/* Tab 2.5: Paletização Expedição (Auto-grupo temperatura) */}
