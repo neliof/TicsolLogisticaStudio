@@ -136,7 +136,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Navigation Tabs Bar */}
-        <nav className="flex items-center gap-1.5 pt-2 pb-1 overflow-x-auto scrollbar-none">
+        <nav className="flex flex-wrap items-center gap-1.5 pt-2 pb-1">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
