@@ -6,6 +6,7 @@ export type AppTab =
   | 'expedicao'
   | 'artsoft_sync'
   | 'series_config'
+  | 'artsoft_config'
   | 'regras'
   | 'auditoria';
 

@@ -18,6 +18,7 @@ import { ExpedicaoModule } from './components/ExpedicaoModule';
 import { ExpedicaoPaletizacaoModule } from './components/ExpedicaoPaletizacaoModule';
 import { BarcodeScannerModal } from './components/BarcodeScannerModal';
 import SeriesConfig from './components/SeriesConfig';
+import ArtsoftConfig from './components/ArtsoftConfig';
 import { useWMSData } from './hooks/useWMSData';
 import { useExpedicaoData } from './hooks/useExpedicaoData';
 import { GuiaTransporte, PaletaExpedicao, ChecklistExpedicao, ComprovanteEmbarque } from './types/expedicao';
@@ -403,6 +404,9 @@ function AppAutenticada({
 
         {/* Tab 6: Configuração de Séries */}
         {activeTab === 'series_config' && <SeriesConfig />}
+
+        {/* Tab 6b: Ligação ARTSOFT */}
+        {activeTab === 'artsoft_config' && <ArtsoftConfig />}
 
         {/* Tab 7: Motor de Regras */}
         {activeTab === 'regras' && (

@@ -41,6 +41,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'stock_mapa', label: 'Stock & Mapa', icon: <Layers className="w-4 h-4" /> },
     { id: 'artsoft_sync', label: 'Sync ARTSOFT', icon: <RefreshCw className="w-4 h-4" />, badge: 'ERP' },
     { id: 'series_config', label: 'Configuração de Séries', icon: <Database className="w-4 h-4" /> },
+    { id: 'artsoft_config', label: 'Ligação ARTSOFT', icon: <Sliders className="w-4 h-4" /> },
     { id: 'regras', label: 'Motor de Regras', icon: <Sliders className="w-4 h-4" /> },
     { id: 'auditoria', label: 'Logs & Auditoria', icon: <ShieldAlert className="w-4 h-4" /> }
   ];

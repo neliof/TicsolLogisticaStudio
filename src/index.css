@@ -283,6 +283,21 @@
   cursor: not-allowed;
 }
 
+.campo-config {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: inherit;
+  background: var(--bg);
+  color: var(--text-main);
+}
+
+.campo-config:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
 @media (max-width: 900px) {
   .series-grid {
     grid-template-columns: 1fr;

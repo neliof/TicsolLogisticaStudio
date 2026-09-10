@@ -263,4 +263,15 @@ export const api = {
   salvarSeriesConfig(modulo: string, receção: string[], expedição: string[]) {
     return this.saveSeriesConfig(modulo, receção, expedição);
   },
+
+  obterArtsoftConfig() {
+    return pedir<{ host: string; porta: string; utilizador: string; senha: string }>('/api/artsoft/config');
+  },
+
+  salvarArtsoftConfig(config: { host: string; porta: string; utilizador: string; senha: string }) {
+    return pedir<{ success: boolean }>('/api/artsoft/config', {
+      method: 'POST',
+      body: JSON.stringify(config),
+    });
+  },
 };
