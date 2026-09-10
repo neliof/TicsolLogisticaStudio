@@ -385,7 +385,7 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
             >
               {selectedGuia.linhas.map(l => (
                 <option key={l.id} value={l.id}>
-                  {l.artigo_codigo} - {l.artigo_descricao.slice(0, 30)}...
+                  {l.artigo_codigo} - {(l.artigo_descricao || '').slice(0, 30)}...
                 </option>
               ))}
             </select>

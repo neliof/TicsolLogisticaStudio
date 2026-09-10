@@ -242,7 +242,7 @@ export const PaletizacaoModule: React.FC<PaletizacaoModuleProps> = ({
                 >
                   {selectedOrder?.linhas.map(l => (
                     <option key={l.id} value={l.id}>
-                      {l.artigo_codigo} - {l.artigo_descricao.slice(0, 30)}...
+                      {l.artigo_codigo} - {(l.artigo_descricao || '').slice(0, 30)}...
                     </option>
                   ))}
                 </select>
@@ -434,7 +434,7 @@ export const PaletizacaoModule: React.FC<PaletizacaoModuleProps> = ({
                 >
                   <div>
                     <span className="font-mono font-bold text-blue-600 block">SSCC: {p.sscc}</span>
-                    <span className="text-slate-800 text-[11px] font-medium block">{p.artigo_descricao.slice(0, 32)}...</span>
+                    <span className="text-slate-800 text-[11px] font-medium block">{(p.artigo_descricao || '').slice(0, 32)}...</span>
                     <span className="text-slate-500 font-mono text-[10px]">
                       {p.caixas_na_palete} Cx • Lote: {p.lote} • {p.localizacao_atual}
                     </span>
