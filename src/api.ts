@@ -242,6 +242,17 @@ export const api = {
     });
   },
 
+  contarDadosTeste() {
+    return pedir<{ contagens: Record<string, number> }>('/api/artsoft/test-data/contagem');
+  },
+
+  apagarDadosTeste(tabelas: string[]) {
+    return pedir<{ success: boolean; deleted: Record<string, number>; erros: Record<string, string> }>(
+      `/api/artsoft/test-data?tabelas=${encodeURIComponent(tabelas.join(','))}`,
+      { method: 'DELETE' }
+    );
+  },
+
   save_artsoft_series(payload: { series: string[] }) {
     return pedir<{ success: boolean; chave: string; valor: string; message: string }>(
       '/api/artsoft/series/save',

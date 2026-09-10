@@ -19,6 +19,7 @@ import { ExpedicaoPaletizacaoModule } from './components/ExpedicaoPaletizacaoMod
 import { BarcodeScannerModal } from './components/BarcodeScannerModal';
 import SeriesConfig from './components/SeriesConfig';
 import ArtsoftConfig from './components/ArtsoftConfig';
+import GestaoDadosModule from './components/GestaoDadosModule';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useWMSData } from './hooks/useWMSData';
 import { useExpedicaoData } from './hooks/useExpedicaoData';
@@ -410,6 +411,13 @@ function AppAutenticada({
 
         {/* Tab 6b: Ligação ARTSOFT */}
         {activeTab === 'artsoft_config' && <ArtsoftConfig />}
+
+        {/* Tab 6c: Gestão de Dados de Teste */}
+        {activeTab === 'gestao_dados' && (
+          <ErrorBoundary>
+            <GestaoDadosModule />
+          </ErrorBoundary>
+        )}
 
         {/* Tab 7: Motor de Regras */}
         {activeTab === 'regras' && (
