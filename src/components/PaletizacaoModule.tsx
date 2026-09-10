@@ -93,6 +93,25 @@ export const PaletizacaoModule: React.FC<PaletizacaoModuleProps> = ({
     );
   }
 
+  // Guard: No rule configs loaded yet (async fetch ainda a decorrer ou API sem dados)
+  if (!activeRule) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-slate-900">A carregar regras de paletização…</h3>
+              <p className="text-sm text-slate-600 mt-1">
+                Se esta mensagem persistir, verifica se existem regras configuradas no Motor de Regras.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const handleMaterializePallet = () => {
     if (!activeLine || !selectedOrder) return;
     if (excedeQuantidadeRestante) {

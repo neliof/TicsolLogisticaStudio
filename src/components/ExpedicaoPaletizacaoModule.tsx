@@ -278,7 +278,7 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
             disabled={syncLoading}
             className="px-3 py-1.5 bg-purple-600 text-white font-semibold text-sm rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-all whitespace-nowrap"
           >
-            {syncLoading ? 'Sincronizando…' : 'Sincronizar Guias'}
+            {syncLoading ? 'Sincronizando…' : 'Sincronizar Documentos'}
           </button>
         </div>
       </div>
@@ -638,7 +638,7 @@ export const ExpedicaoPaletizacaoModule: React.FC<ExpedicaoPaletizacaoModuleProp
       {showSyncModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center rounded-lg z-50">
           <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full mx-4">
-            <h2 className="text-lg font-bold text-slate-900 mb-4">Sincronizar Guias do ARTSOFT</h2>
+            <h2 className="text-lg font-bold text-slate-900 mb-4">Sincronizar Documentos do ARTSOFT</h2>
             <div className="space-y-3 mb-6">
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Data Início</label>
