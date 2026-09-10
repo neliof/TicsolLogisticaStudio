@@ -1,14 +1,15 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { AppTab } from '../types/wms';
-import { 
-  Truck, 
-  Boxes, 
-  Layers, 
-  RefreshCw, 
-  Sliders, 
-  ShieldAlert, 
-  Scan, 
-  Building2, 
+import { api } from '../api';
+import {
+  Truck,
+  Boxes,
+  Layers,
+  RefreshCw,
+  Sliders,
+  ShieldAlert,
+  Scan,
+  Building2,
   Database,
   Radio,
   LogOut
@@ -33,6 +34,13 @@ export const Navbar: React.FC<NavbarProps> = ({
   nomeUtilizador,
   aoSair
 }) => {
+  const [artsoftHost, setArtsoftHost] = useState<string | null>(null);
+
+  useEffect(() => {
+    api.obterArtsoftConfig()
+      .then((c) => setArtsoftHost(c.host || null))
+      .catch(() => setArtsoftHost(null));
+  }, []);
   const tabs: { id: AppTab; label: string; icon: React.ReactNode; badge?: string }[] = [
     { id: 'rececao', label: 'Receção', icon: <Building2 className="w-4 h-4" />, badge: '3 Guias' },
     { id: 'paletizacao', label: 'Paletização Receção', icon: <Boxes className="w-4 h-4" />, badge: 'SSCC GS1' },
@@ -88,7 +96,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* ARTSOFT Endpoint Connection */}
             <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-800/80 border border-slate-700/80 rounded text-slate-300 font-mono">
               <Radio className="w-3.5 h-3.5 text-amber-400" />
-              <span>ARTSOFT: <code className="text-amber-300">192.168.1.250</code></span>
+              <span>ARTSOFT: <code className="text-amber-300">{artsoftHost || '—'}</code></span>
             </div>
           </div>
 
