@@ -242,16 +242,21 @@ function AppAutenticada({
 
   // Handler: Sync documents (Receção/Paletização/Expedição)
   const handleSyncDocuments = async (dataInicio?: string, dataFim?: string, series?: string[]) => {
+    console.log('[App] handleSyncDocuments called', { activeTab, dataInicio, dataFim, series });
     try {
-      await api.sincronizarGuias(dataInicio, dataFim, series);
+      console.log('[App] Calling api.sincronizarGuias...');
+      const result = await api.sincronizarGuias(dataInicio, dataFim, series);
+      console.log('[App] Sync result:', result);
       // Reload documents after sync
       if (activeTab === 'rececao') {
+        console.log('[App] Reloading receção orders');
         setOrders([...orders]); // Trigger reload via hook
       } else if (activeTab === 'paletizacao' || activeTab === 'paletizacao_expedicao' || activeTab === 'expedicao') {
+        console.log('[App] Reloading expedição guias');
         setGuiasEntrada([...guiasEntrada]); // Trigger reload via hook
       }
     } catch (err) {
-      console.error('Sync failed:', err);
+      console.error('[App] Sync failed:', err);
       throw err;
     }
   };

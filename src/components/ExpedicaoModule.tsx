@@ -59,14 +59,19 @@ export const ExpedicaoModule: React.FC<ExpedicaoModuleProps> = ({
 
   const handleSync = async () => {
     setSyncLoading(true);
+    console.log('[ExpedicaoModule] Iniciando sync', { seriesExpedicao, syncDataInicio, syncDataFim, onSyncDocumentsDef: typeof onSyncDocuments });
     try {
-      await onSyncDocuments?.(syncDataInicio || undefined, syncDataFim || undefined, seriesExpedicao);
+      if (!onSyncDocuments) {
+        throw new Error('onSyncDocuments callback não definido');
+      }
+      await onSyncDocuments(syncDataInicio || undefined, syncDataFim || undefined, seriesExpedicao);
       setSyncMessage(`✓ Guias de ${seriesExpedicao.join(', ')} sincronizadas!`);
       setShowSyncModal(false);
       setSyncDataInicio('');
       setSyncDataFim('');
       setTimeout(() => setSyncMessage(null), 4000);
     } catch (err) {
+      console.error('[ExpedicaoModule] Sync error:', err);
       const msg = err instanceof Error ? err.message : 'Falha ao sincronizar';
       setSyncMessage(`✗ ${msg}`);
       setTimeout(() => setSyncMessage(null), 4000);
