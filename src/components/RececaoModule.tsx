@@ -26,6 +26,7 @@ interface RececaoModuleProps {
   onOpenScanner: () => void;
   scannedCode: string | null;
   clearScannedCode: () => void;
+  onSyncDocuments?: (dataInicio?: string, dataFim?: string, series?: string[]) => Promise<void>;
 }
 
 export const RececaoModule: React.FC<RececaoModuleProps> = ({
@@ -34,7 +35,8 @@ export const RececaoModule: React.FC<RececaoModuleProps> = ({
   onNavigateToPaletizacao,
   onOpenScanner,
   scannedCode,
-  clearScannedCode
+  clearScannedCode,
+  onSyncDocuments
 }) => {
   const [selectedOrderId, setSelectedOrderId] = useState<string>(orders[0]?.id || '');
   const [statusFilter, setStatusFilter] = useState<string>('TODOS');

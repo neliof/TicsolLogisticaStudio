@@ -25,6 +25,7 @@ interface PaletizacaoModuleProps {
   selectedTenant: string;
   onPalletCreated: (pallet: PalletSSCC, orderId: string, lineId: string, boxesAdded: number) => void;
   preSelectedOrderAndLine?: { orderId: string; lineId: string } | null;
+  onSyncDocuments?: (dataInicio?: string, dataFim?: string, series?: string[]) => Promise<void>;
 }
 
 export const PaletizacaoModule: React.FC<PaletizacaoModuleProps> = ({
@@ -33,7 +34,8 @@ export const PaletizacaoModule: React.FC<PaletizacaoModuleProps> = ({
   ruleConfigs,
   selectedTenant,
   onPalletCreated,
-  preSelectedOrderAndLine
+  preSelectedOrderAndLine,
+  onSyncDocuments
 }) => {
   // Find order and line
   const [selectedOrderId, setSelectedOrderId] = useState<string>(

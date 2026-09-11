@@ -22,6 +22,7 @@ interface ExpedicaoModuleProps {
   onConfirmGuia: (guiaId: string) => void;
   onCreateEmbarque: (comprovante: ComprovanteEmbarque) => void;
   onSelectGuia?: (guiaId: string) => void;
+  onSyncDocuments?: (dataInicio?: string, dataFim?: string, series?: string[]) => Promise<void>;
 }
 
 export const ExpedicaoModule: React.FC<ExpedicaoModuleProps> = ({
@@ -30,7 +31,8 @@ export const ExpedicaoModule: React.FC<ExpedicaoModuleProps> = ({
   comprovantes,
   onConfirmGuia,
   onCreateEmbarque,
-  onSelectGuia
+  onSelectGuia,
+  onSyncDocuments
 }) => {
   const [selectedGuiaId, setSelectedGuiaId] = useState<string>(guias[0]?.id || '');
   const [showEmbarqueForm, setShowEmbarqueForm] = useState(false);
