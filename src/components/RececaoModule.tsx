@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
 import { ReceivingOrder, ReceivingLine } from '../types/wms';
-import { 
-  Truck, 
-  Search, 
-  Scan, 
-  CheckCircle2, 
-  AlertTriangle, 
-  Clock, 
-  Building2, 
-  Thermometer, 
-  ArrowRight, 
-  Save, 
-  Plus, 
+import { useSeriesConfig } from '../hooks/useSeriesConfig';
+import {
+  Truck,
+  Search,
+  Scan,
+  CheckCircle2,
+  AlertTriangle,
+  Clock,
+  Building2,
+  Thermometer,
+  ArrowRight,
+  Save,
+  Plus,
   FileText,
   Boxes,
   ShieldCheck,
@@ -38,10 +39,17 @@ export const RececaoModule: React.FC<RececaoModuleProps> = ({
   clearScannedCode,
   onSyncDocuments
 }) => {
+  const { receção: seriesReceção } = useSeriesConfig('receção');
+
   const [selectedOrderId, setSelectedOrderId] = useState<string>(orders[0]?.id || '');
   const [statusFilter, setStatusFilter] = useState<string>('TODOS');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [notification, setNotification] = useState<string | null>(null);
+  const [showSyncModal, setShowSyncModal] = useState(false);
+  const [syncDataInicio, setSyncDataInicio] = useState('');
+  const [syncDataFim, setSyncDataFim] = useState('');
+  const [syncLoading, setSyncLoading] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
 
   const selectedOrder = orders.find(o => o.id === selectedOrderId) || orders[0];
 
@@ -103,6 +111,24 @@ export const RececaoModule: React.FC<RececaoModuleProps> = ({
     showNotification(`Receção da Guia ${selectedOrder.numero_guia} concluída com sucesso! RPC fn_registar_rececao_linha executado.`);
   };
 
+  const handleSync = async () => {
+    setSyncLoading(true);
+    try {
+      await onSyncDocuments?.(syncDataInicio || undefined, syncDataFim || undefined, seriesReceção);
+      setSyncMessage(`✓ Receções de ${seriesReceção.join(', ')} sincronizadas!`);
+      setShowSyncModal(false);
+      setSyncDataInicio('');
+      setSyncDataFim('');
+      setTimeout(() => setSyncMessage(null), 4000);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Falha ao sincronizar';
+      setSyncMessage(`✗ ${msg}`);
+      setTimeout(() => setSyncMessage(null), 4000);
+    } finally {
+      setSyncLoading(false);
+    }
+  };
+
   const filteredOrders = orders.filter(ord => {
     const matchesStatus = statusFilter === 'TODOS' || ord.estado === statusFilter;
     const matchesQuery = 
@@ -135,6 +161,14 @@ export const RececaoModule: React.FC<RececaoModuleProps> = ({
         </div>
 
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowSyncModal(true)}
+            disabled={syncLoading}
+            className="flex items-center gap-2 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors disabled:opacity-50"
+          >
+            <Calendar className="w-4 h-4" />
+            {syncLoading ? 'A sincronizar…' : 'Sincronizar Documentos'}
+          </button>
           <button
             onClick={onOpenScanner}
             className="flex items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors"
@@ -445,6 +479,75 @@ export const RececaoModule: React.FC<RececaoModuleProps> = ({
           )}
         </div>
       </div>
+
+      {/* Sync Message Notification */}
+      {syncMessage && (
+        <div className="fixed bottom-6 right-6 z-50 bg-blue-500 text-white font-bold px-4 py-3 rounded-lg shadow-xl border border-blue-400 animate-pulse">
+          {syncMessage}
+        </div>
+      )}
+
+      {/* Sync Modal */}
+      {showSyncModal && (
+        <div className="fixed inset-0 z-40 bg-black/50 flex items-center justify-center">
+          <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full mx-4">
+            <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-blue-600" />
+              Sincronizar Documentos
+            </h3>
+            <p className="text-sm text-slate-600 mb-6">
+              Sincroniza receções configuradas {seriesReceção.length > 0 ? `(séries: ${seriesReceção.join(', ')})` : '(sem séries configuradas)'} com intervalo de datas (opcional).
+            </p>
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Data Início (opcional)
+                </label>
+                <input
+                  type="date"
+                  value={syncDataInicio}
+                  onChange={(e) => setSyncDataInicio(e.target.value)}
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Data Fim (opcional)
+                </label>
+                <input
+                  type="date"
+                  value={syncDataFim}
+                  onChange={(e) => setSyncDataFim(e.target.value)}
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowSyncModal(false)}
+                disabled={syncLoading}
+                className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-colors disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSync}
+                disabled={syncLoading}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {syncLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Sincronizando...
+                  </>
+                ) : (
+                  'Sincronizar'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
